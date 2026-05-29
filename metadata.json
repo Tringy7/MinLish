@@ -1,0 +1,6 @@
+{
+  "name": "MinLish",
+  "description": "Smart English Vocabulary Study App with Spaced Repetition (SM-2) and Flashcards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
