@@ -26,12 +26,7 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       MyApplicationTheme {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-          AppNavigation(
-              viewModel = viewModel, 
-              modifier = Modifier.padding(innerPadding)
-          )
-        }
+        AppNavigation(viewModel = viewModel)
       }
     }
   }

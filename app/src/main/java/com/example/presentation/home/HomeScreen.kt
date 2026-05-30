@@ -138,7 +138,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxWidth(),
-                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 80.dp),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(items = wordSets, key = { it.id }) { vocabSet ->

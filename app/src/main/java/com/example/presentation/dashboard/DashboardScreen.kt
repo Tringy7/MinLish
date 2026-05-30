@@ -191,8 +191,6 @@ fun DashboardScreen(
                     )
                 }
             }
-            
-            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }

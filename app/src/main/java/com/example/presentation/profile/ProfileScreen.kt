@@ -238,8 +238,6 @@ fun ProfileScreen(
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Đăng Xuất", fontWeight = FontWeight.Bold)
             }
-
-            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }

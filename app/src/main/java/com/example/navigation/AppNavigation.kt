@@ -1,5 +1,6 @@
 package com.example.navigation
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
@@ -41,7 +42,7 @@ fun AppNavigation(
     NavHost(
         navController = navController,
         startDestination = startDestination,
-        modifier = modifier
+        modifier = modifier.fillMaxSize()
     ) {
         
         // --- Authentication Gate ---
