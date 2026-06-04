@@ -6,20 +6,21 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.di.ServiceLocator
 import com.example.data.local.entity.*
-import com.example.domain.repository.VocabularyRepository
 import com.example.domain.usecase.auth.*
 import com.example.domain.usecase.home.*
 import com.example.domain.usecase.vocabulary.*
 import com.example.domain.usecase.flashcard.*
 import com.example.domain.usecase.profile.*
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-// Typealiases to maintain complete compatibility with old screen imports 
-// while cleanly architecting models inside domain library
 typealias DashboardStats = com.example.domain.model.DashboardStats
 typealias DailyActivity = com.example.domain.model.DailyActivity
 
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class VocabularyViewModel(
     private val getUserUseCase: GetUserUseCase,
     private val loginUseCase: LoginUseCase,
@@ -31,56 +32,59 @@ class VocabularyViewModel(
     private val manageVocabularyWordUseCase: ManageVocabularyWordUseCase,
     private val getDueWordsUseCase: GetDueWordsUseCase,
     private val reviewWordUseCase: ReviewWordUseCase,
-    private val updateEnglishLevelUseCase: UpdateEnglishLevelUseCase
+    private val updateEnglishLevelUseCase: UpdateEnglishLevelUseCase,
 ) : ViewModel() {
 
-    // --- Authentication & User States ---
-    private val _isUserLoggedIn = MutableStateFlow(true) // Simulating session start active state
+    private val _isUserLoggedIn = MutableStateFlow(value = true)
     val isUserLoggedIn = _isUserLoggedIn.asStateFlow()
 
-    // Retrieve user identity using GetUserUseCase
     val userState: StateFlow<UserEntity?> = getUserUseCase.getFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    // --- Vocabulary Sets ---
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
-    // FlatMap latest searches using GetVocabularySetsUseCase
     val wordSets: StateFlow<List<VocabularySetEntity>> = _searchQuery
+        .debounce(300) // Tránh search quá dồn dập
+        .distinctUntilChanged()
         .flatMapLatest { query ->
             getVocabularySetsUseCase(query)
         }
+        .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- Active Set and Words ---
     private val _currentSetId = MutableStateFlow<Int?>(null)
     val currentSetId = _currentSetId.asStateFlow()
 
     val currentSet: StateFlow<VocabularySetEntity?> = _currentSetId
-        .map { id -> id?.let { getVocabularySetsUseCase.getById(it) } }
+        .flatMapLatest { id ->
+            flow {
+                emit(id?.let { getVocabularySetsUseCase.getById(it) })
+            }
+        }
+        .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     val wordsInCurrentSet: StateFlow<List<VocabularyWordEntity>> = _currentSetId
         .flatMapLatest { id ->
             getWordsInSetUseCase(id)
         }
+        .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- Favorite Words ---
     val favoriteWords: StateFlow<List<VocabularyWordEntity>> = manageVocabularyWordUseCase.getFavoriteWordsFlow()
+        .distinctUntilChanged()
+        .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- Spaced Repetition Due Lists ---
     val allDueWords: StateFlow<List<VocabularyWordEntity>> = getDueWordsUseCase()
+        .distinctUntilChanged()
+        .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- Dashboard & Analytical Statistics ---
     val dashboardStats: StateFlow<DashboardStats> = getDashboardStatsUseCase()
+        .flowOn(Dispatchers.IO) // Chuyển luồng IO cho việc fetch data
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
-
-
-    // --- Actions & Methods ---
 
     fun login(email: String, name: String) {
         viewModelScope.launch {
@@ -100,8 +104,6 @@ class VocabularyViewModel(
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
     }
-
-    // --- Word CRUD Management using Dedicated UseCases ---
 
     fun addWord(setId: Int, wordTxt: String, ipa: String, meaningTxt: String, exampleTxt: String, noteTxt: String) {
         viewModelScope.launch {
@@ -127,8 +129,6 @@ class VocabularyViewModel(
         }
     }
 
-    // --- Vocabulary Set CRUD Management ---
-
     fun addSet(name: String, description: String, tags: String) {
         viewModelScope.launch {
             manageVocabularySetUseCase.addSet(name, description, tags)
@@ -153,34 +153,34 @@ class VocabularyViewModel(
         }
     }
 
-    // --- Spaced Repetition Study Engine ---
-
     fun reviewWordResponse(word: VocabularyWordEntity, rating: Int) {
         viewModelScope.launch {
             reviewWordUseCase(word, rating)
         }
     }
 
-    // --- ViewModel Factory ---
     class Factory(private val context: Context) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(VocabularyViewModel::class.java)) {
-                val repository = ServiceLocator.getRepository(context)
+                // Sử dụng lazy delegation để không khởi tạo repository ngay lập tức trên Main Thread
+                val userRepo by lazy { ServiceLocator.provideUserRepository(context) }
+                val setRepo by lazy { ServiceLocator.provideVocabularySetRepository(context) }
+                val wordRepo by lazy { ServiceLocator.provideVocabularyWordRepository(context) }
+                val historyRepo by lazy { ServiceLocator.provideReviewHistoryRepository(context) }
                 
-                // Construct and inject proper Use Cases
                 return VocabularyViewModel(
-                    getUserUseCase = GetUserUseCase(repository),
-                    loginUseCase = LoginUseCase(repository),
+                    getUserUseCase = GetUserUseCase(userRepo),
+                    loginUseCase = LoginUseCase(userRepo),
                     logoutUseCase = LogoutUseCase(),
-                    getDashboardStatsUseCase = GetDashboardStatsUseCase(repository),
-                    getVocabularySetsUseCase = GetVocabularySetsUseCase(repository),
-                    getWordsInSetUseCase = GetWordsInSetUseCase(repository),
-                    manageVocabularySetUseCase = ManageVocabularySetUseCase(repository),
-                    manageVocabularyWordUseCase = ManageVocabularyWordUseCase(repository),
-                    getDueWordsUseCase = GetDueWordsUseCase(repository),
-                    reviewWordUseCase = ReviewWordUseCase(repository),
-                    updateEnglishLevelUseCase = UpdateEnglishLevelUseCase(repository)
+                    getDashboardStatsUseCase = GetDashboardStatsUseCase(userRepo, wordRepo, historyRepo),
+                    getVocabularySetsUseCase = GetVocabularySetsUseCase(setRepo),
+                    getWordsInSetUseCase = GetWordsInSetUseCase(wordRepo),
+                    manageVocabularySetUseCase = ManageVocabularySetUseCase(setRepo),
+                    manageVocabularyWordUseCase = ManageVocabularyWordUseCase(wordRepo),
+                    getDueWordsUseCase = GetDueWordsUseCase(wordRepo),
+                    reviewWordUseCase = ReviewWordUseCase(wordRepo, historyRepo, UpdateStreakUseCase(userRepo)),
+                    updateEnglishLevelUseCase = UpdateEnglishLevelUseCase(userRepo)
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")

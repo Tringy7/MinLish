@@ -4,7 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.data.local.dao.VocabularyDao
+import com.example.data.local.dao.ReviewHistoryDao
+import com.example.data.local.dao.UserDao
+import com.example.data.local.dao.VocabularySetDao
+import com.example.data.local.dao.VocabularyWordDao
 import com.example.data.local.entity.*
 
 @Database(
@@ -19,7 +22,10 @@ import com.example.data.local.entity.*
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun vocabularyDao(): VocabularyDao
+    abstract fun userDao(): UserDao
+    abstract fun reviewHistoryDao(): ReviewHistoryDao
+    abstract fun vocabularySetDao(): VocabularySetDao
+    abstract fun vocabularyWordDao(): VocabularyWordDao
 
     companion object {
         @Volatile

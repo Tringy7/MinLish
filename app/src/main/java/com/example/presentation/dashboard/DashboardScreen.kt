@@ -25,6 +25,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.domain.model.DailyActivity
 import com.example.presentation.VocabularyViewModel
 import com.example.presentation.components.GlassTitle
 import com.example.presentation.components.MinLishCard
@@ -36,7 +40,7 @@ fun DashboardScreen(
     viewModel: VocabularyViewModel,
     modifier: Modifier = Modifier
 ) {
-    val stats by viewModel.dashboardStats.collectAsState()
+    val stats by viewModel.dashboardStats.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -264,15 +268,34 @@ fun StatMicroCard(
 
 @Composable
 fun StudyActivityChart(
-    activities: List<com.example.presentation.DailyActivity>,
+    activities: List<DailyActivity>,
     primaryColor: Color,
     secondaryColor: Color
 ) {
     val maxCount = remember(activities) {
-        max(5, activities.maxOf { it.count })
+        val m = if (activities.isEmpty()) 5 else activities.maxOf { it.count }
+        max(5, m)
     }
 
     val canvasHeight = 160.dp
+    val textMeasurer = rememberTextMeasurer()
+
+    val labelStyle = MaterialTheme.typography.labelSmall.copy(
+        color = Color.Gray,
+        textAlign = TextAlign.Center
+    )
+    val valueStyle = MaterialTheme.typography.labelLarge.copy(
+        color = Color.DarkGray,
+        fontWeight = FontWeight.Bold
+    )
+
+    // Pre-calculate layouts to avoid expensive measurement during draw calls
+    val measuredLabels = remember(activities) {
+        activities.map { textMeasurer.measure(it.dayLabel, labelStyle) }
+    }
+    val measuredValues = remember(activities) {
+        activities.map { textMeasurer.measure("${it.count}", valueStyle) }
+    }
 
     Box(
         modifier = Modifier
@@ -286,14 +309,9 @@ fun StudyActivityChart(
         ) {
             val width = size.width
             val height = size.height
-            val spacing = width / (activities.size)
+            val spacing = if (activities.isNotEmpty()) width / activities.size else 0f
 
-            val paint = android.graphics.Paint().apply {
-                color = android.graphics.Color.GRAY
-                textSize = 28f
-                textAlign = android.graphics.Paint.Align.CENTER
-                isAntiAlias = true
-            }
+            if (spacing == 0f) return@Canvas
 
             // Draw horizontal dotted gridlines
             val gridLines = 3
@@ -311,7 +329,7 @@ fun StudyActivityChart(
             activities.forEachIndexed { index, activity ->
                 val barWidth = 36.dp.toPx()
                 val fraction = activity.count.toFloat() / maxCount.toFloat()
-                
+
                 // Set bounds
                 val drawHeight = (height * 0.82f) * fraction
                 val x = (spacing * index) + (spacing / 2) - (barWidth / 2)
@@ -330,33 +348,27 @@ fun StudyActivityChart(
                     cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx())
                 )
 
-                // Render reviews count text above bars
+                // Render reviews count text above bars using cached layout
                 if (activity.count > 0) {
-                    drawIntoCanvas { canvas ->
-                        canvas.nativeCanvas.drawText(
-                            "${activity.count}",
-                            x + (barWidth / 2),
-                            y - 6.dp.toPx(),
-                            paint.apply {
-                                color = android.graphics.Color.DKGRAY
-                                typeface = android.graphics.Typeface.DEFAULT_BOLD
-                            }
+                    val textResult = measuredValues[index]
+                    drawText(
+                        textLayoutResult = textResult,
+                        topLeft = Offset(
+                            x + (barWidth / 2) - (textResult.size.width / 2),
+                            y - textResult.size.height - 4.dp.toPx()
                         )
-                    }
-                }
-
-                // Render weekday label under bars
-                drawIntoCanvas { canvas ->
-                    canvas.nativeCanvas.drawText(
-                        activity.dayLabel,
-                        x + (barWidth / 2),
-                        height,
-                        paint.apply {
-                            color = android.graphics.Color.GRAY
-                            typeface = android.graphics.Typeface.DEFAULT
-                        }
                     )
                 }
+
+                // Render weekday label under bars using cached layout
+                val labelResult = measuredLabels[index]
+                drawText(
+                    textLayoutResult = labelResult,
+                    topLeft = Offset(
+                        x + (barWidth / 2) - (labelResult.size.width / 2),
+                        height
+                    )
+                )
             }
         }
     }

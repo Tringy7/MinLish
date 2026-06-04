@@ -40,14 +40,16 @@ fun FlashcardScreen(
     modifier: Modifier = Modifier
 ) {
     val wordsList by viewModel.wordsInCurrentSet.collectAsState()
-    val allDueWords by viewModel.allDueWords.collectAsState()
 
-    // Filter cards to review
-    val studySessionCards = remember(wordsList, allDueWords, dueOnly, setId) {
-        if (dueOnly) {
-            wordsList.filter { it.nextReviewTimestamp <= System.currentTimeMillis() }
-        } else {
-            wordsList
+    // Filter cards to review using derivedStateOf for better performance
+    val studySessionCards by remember {
+        derivedStateOf {
+            val now = System.currentTimeMillis()
+            if (dueOnly) {
+                wordsList.filter { it.nextReviewTimestamp <= now }
+            } else {
+                wordsList
+            }
         }
     }
 

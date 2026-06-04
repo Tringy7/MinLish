@@ -1,9 +1,9 @@
 package com.example.domain.usecase.vocabulary
 
 import com.example.data.local.entity.VocabularyWordEntity
-import com.example.domain.repository.VocabularyRepository
+import com.example.domain.repository.VocabularyWordRepository
 
-class ManageVocabularyWordUseCase(private val repository: VocabularyRepository) {
+class ManageVocabularyWordUseCase(private val repository: VocabularyWordRepository) {
     suspend fun addWord(
         setId: Int,
         wordTxt: String,

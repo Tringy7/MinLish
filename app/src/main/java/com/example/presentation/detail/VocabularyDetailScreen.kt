@@ -53,17 +53,21 @@ fun VocabularyDetailScreen(
     }
 
     var wordQuery by remember { mutableStateOf("") }
-    val filteredWords = remember(wordsList, wordQuery) {
-        if (wordQuery.isBlank()) wordsList else {
-            wordsList.filter {
-                it.word.contains(wordQuery, ignoreCase = true) ||
-                it.meaning.contains(wordQuery, ignoreCase = true)
+    val filteredWords by remember {
+        derivedStateOf {
+            if (wordQuery.isBlank()) wordsList else {
+                wordsList.filter {
+                    it.word.contains(wordQuery, ignoreCase = true) ||
+                    it.meaning.contains(wordQuery, ignoreCase = true)
+                }
             }
         }
     }
 
-    val dueWords = remember(wordsList) {
-        wordsList.filter { it.nextReviewTimestamp <= System.currentTimeMillis() }
+    val dueWords by remember {
+        derivedStateOf {
+            wordsList.filter { it.nextReviewTimestamp <= System.currentTimeMillis() }
+        }
     }
 
     Scaffold(

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.UserEntity
 import com.example.data.local.entity.VocabularySetEntity
 import com.example.presentation.VocabularyViewModel
@@ -41,11 +42,11 @@ fun HomeScreen(
     onStudyDue: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val user by viewModel.userState.collectAsState()
-    val wordSets by viewModel.wordSets.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
-    val allDueWords by viewModel.allDueWords.collectAsState()
-    val stats by viewModel.dashboardStats.collectAsState()
+    val user by viewModel.userState.collectAsStateWithLifecycle()
+    val wordSets by viewModel.wordSets.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val allDueWords by viewModel.allDueWords.collectAsStateWithLifecycle()
+    val stats by viewModel.dashboardStats.collectAsStateWithLifecycle()
 
     var showAddSetDialog by remember { mutableStateOf(false) }
 

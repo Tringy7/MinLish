@@ -13,12 +13,16 @@ class MinLishApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        val repository = ServiceLocator.getRepository(this)
-        
-        // Prepopulate the local Room database with beautiful flashcards for the presentation demo!
+        // Khởi tạo dữ liệu mẫu trong Coroutine để không block Main Thread
+        // Thêm delay nhẹ hoặc yield để nhường CPU cho quá trình render frame đầu tiên của UI
         CoroutineScope(Dispatchers.IO).launch {
-            if (repository.getUser() == null) {
-                repository.saveUser(
+            kotlinx.coroutines.delay(500) // Delay 500ms để UI render xong frame đầu tiên
+            val userRepo = ServiceLocator.provideUserRepository(this@MinLishApplication)
+            val setRepo = ServiceLocator.provideVocabularySetRepository(this@MinLishApplication)
+            val wordRepo = ServiceLocator.provideVocabularyWordRepository(this@MinLishApplication)
+
+            if (userRepo.getUser() == null) {
+                userRepo.saveUser(
                     UserEntity(
                         id = "local_user",
                         name = "Hữu Trí Nguyễn",
@@ -32,9 +36,9 @@ class MinLishApplication : Application() {
             }
 
             // Populate initial premium Vocab sets if table index 1 does not exist
-            val examSet = repository.getSetById(1)
+            val examSet = setRepo.getSetById(1)
             if (examSet == null) {
-                val setId1 = repository.insertSet(
+                val setId1 = setRepo.insertSet(
                     VocabularySetEntity(
                         id = 1,
                         name = "Essential TOEFL Words",
@@ -43,7 +47,7 @@ class MinLishApplication : Application() {
                     )
                 )
                 
-                repository.insertWord(
+                wordRepo.insertWord(
                     VocabularyWordEntity(
                         setId = setId1,
                         word = "Pragmatic",
@@ -54,7 +58,7 @@ class MinLishApplication : Application() {
                         isFavorite = true
                     )
                 )
-                repository.insertWord(
+                wordRepo.insertWord(
                     VocabularyWordEntity(
                         setId = setId1,
                         word = "Eloquent",
@@ -65,7 +69,7 @@ class MinLishApplication : Application() {
                         isFavorite = false
                     )
                 )
-                repository.insertWord(
+                wordRepo.insertWord(
                     VocabularyWordEntity(
                         setId = setId1,
                         word = "Ubiquitous",
@@ -77,7 +81,7 @@ class MinLishApplication : Application() {
                     )
                 )
 
-                val setId2 = repository.insertSet(
+                val setId2 = setRepo.insertSet(
                     VocabularySetEntity(
                         id = 2,
                         name = "Daily Conversation Idioms",
@@ -86,7 +90,7 @@ class MinLishApplication : Application() {
                     )
                 )
 
-                repository.insertWord(
+                wordRepo.insertWord(
                     VocabularyWordEntity(
                         setId = setId2,
                         word = "Break a leg",
@@ -97,7 +101,7 @@ class MinLishApplication : Application() {
                         isFavorite = false
                     )
                 )
-                repository.insertWord(
+                wordRepo.insertWord(
                     VocabularyWordEntity(
                         setId = setId2,
                         word = "Bite the bullet",
