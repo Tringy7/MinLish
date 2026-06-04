@@ -5,6 +5,7 @@ import com.example.di.ServiceLocator
 import com.example.data.local.entity.UserEntity
 import com.example.data.local.entity.VocabularySetEntity
 import com.example.data.local.entity.VocabularyWordEntity
+import com.example.utils.NotificationHelper
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -12,6 +13,9 @@ import kotlinx.coroutines.launch
 class MinLishApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+
+        // Khởi tạo notification channels
+        NotificationHelper.createNotificationChannels(this)
 
         // Khởi tạo dữ liệu mẫu trong Coroutine để không block Main Thread
         // Thêm delay nhẹ hoặc yield để nhường CPU cho quá trình render frame đầu tiên của UI

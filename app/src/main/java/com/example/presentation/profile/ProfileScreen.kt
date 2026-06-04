@@ -30,6 +30,7 @@ import coil.request.ImageRequest
 import com.example.presentation.VocabularyViewModel
 import com.example.presentation.components.GlassTitle
 import com.example.presentation.components.MinLishCard
+import com.example.utils.ReminderManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -177,9 +178,13 @@ fun ProfileScreen(
                         checked = dailyNotificationEnabled,
                         onCheckedChange = {
                             dailyNotificationEnabled = it
-                            val phrase = if (it) "Đã bật: Lịch nhắc nhở hàng ngày qua WorkManager (20:00)." 
-                                         else "Đã tắt lịch nhắc nhở hàng ngày."
-                            Toast.makeText(context, phrase, Toast.LENGTH_SHORT).show()
+                            if (it) {
+                                ReminderManager.scheduleDailyReminder(context)
+                                Toast.makeText(context, "Đã bật: Lịch nhắc nhở hàng ngày (20:00).", Toast.LENGTH_SHORT).show()
+                            } else {
+                                ReminderManager.cancelDailyReminder(context)
+                                Toast.makeText(context, "Đã tắt lịch nhắc nhở hàng ngày.", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         modifier = Modifier.testTag("switch_daily_reminder")
                     )
@@ -210,9 +215,13 @@ fun ProfileScreen(
                         checked = reviewAlarmEnabled,
                         onCheckedChange = {
                             reviewAlarmEnabled = it
-                            val phrase = if (it) "Đã bật: Thông báo tức thì khi từ vựng đến hạn ôn tập SM-2." 
-                                         else "Đã tắt cảnh báo từ đến hạn."
-                            Toast.makeText(context, phrase, Toast.LENGTH_SHORT).show()
+                            if (it) {
+                                ReminderManager.scheduleReviewReminder(context)
+                                Toast.makeText(context, "Đã bật: Thông báo khi có từ đến hạn ôn tập.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                ReminderManager.cancelReviewReminder(context)
+                                Toast.makeText(context, "Đã tắt cảnh báo từ đến hạn.", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         modifier = Modifier.testTag("switch_due_reminder")
                     )
