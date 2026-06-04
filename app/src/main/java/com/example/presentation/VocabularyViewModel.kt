@@ -24,6 +24,7 @@ typealias DailyActivity = com.example.domain.model.DailyActivity
 class VocabularyViewModel(
     private val getUserUseCase: GetUserUseCase,
     private val loginUseCase: LoginUseCase,
+    private val signUpUseCase: SignUpUseCase,
     private val logoutUseCase: LogoutUseCase,
     private val getDashboardStatsUseCase: GetDashboardStatsUseCase,
     private val getVocabularySetsUseCase: GetVocabularySetsUseCase,
@@ -35,11 +36,12 @@ class VocabularyViewModel(
     private val updateEnglishLevelUseCase: UpdateEnglishLevelUseCase,
 ) : ViewModel() {
 
-    private val _isUserLoggedIn = MutableStateFlow(value = true)
-    val isUserLoggedIn = _isUserLoggedIn.asStateFlow()
-
     val userState: StateFlow<UserEntity?> = getUserUseCase.getFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isUserLoggedIn: StateFlow<Boolean> = userState
+        .map { it != null }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -86,15 +88,26 @@ class VocabularyViewModel(
         .flowOn(Dispatchers.IO) // Chuyển luồng IO cho việc fetch data
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
-    fun login(email: String, name: String) {
+    init {
+        // userState and isUserLoggedIn are reactive now
+    }
+
+    fun login(email: String, password: String) {
         viewModelScope.launch {
-            loginUseCase(email, name)
-            _isUserLoggedIn.value = true
+            loginUseCase(email, password)
+        }
+    }
+
+    fun signUp(email: String, name: String, password: String, englishLevel: String) {
+        viewModelScope.launch {
+            signUpUseCase(email, name, password, englishLevel)
         }
     }
 
     fun logout() {
-        _isUserLoggedIn.value = logoutUseCase()
+        viewModelScope.launch {
+            logoutUseCase()
+        }
     }
 
     fun selectSet(setId: Int?) {
@@ -172,7 +185,8 @@ class VocabularyViewModel(
                 return VocabularyViewModel(
                     getUserUseCase = GetUserUseCase(userRepo),
                     loginUseCase = LoginUseCase(userRepo),
-                    logoutUseCase = LogoutUseCase(),
+                    signUpUseCase = SignUpUseCase(userRepo),
+                    logoutUseCase = LogoutUseCase(userRepo),
                     getDashboardStatsUseCase = GetDashboardStatsUseCase(userRepo, wordRepo, historyRepo),
                     getVocabularySetsUseCase = GetVocabularySetsUseCase(setRepo),
                     getWordsInSetUseCase = GetWordsInSetUseCase(wordRepo),

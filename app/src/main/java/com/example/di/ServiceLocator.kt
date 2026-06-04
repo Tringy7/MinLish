@@ -4,6 +4,8 @@ import android.content.Context
 import com.example.data.local.AppDatabase
 import com.example.data.repository.*
 import com.example.domain.repository.*
+import com.example.domain.usecase.auth.LoginUseCase
+import com.example.domain.usecase.auth.SignUpUseCase
 
 /**
  * Service Locator for manual dependency injection.
@@ -24,6 +26,14 @@ object ServiceLocator {
 
     fun provideUserRepository(context: Context): UserRepository {
         return UserRepositoryImpl(getDatabase(context).userDao())
+    }
+
+    fun provideLoginUseCase(context: Context): LoginUseCase {
+        return LoginUseCase(provideUserRepository(context))
+    }
+
+    fun provideSignUpUseCase(context: Context): SignUpUseCase {
+        return SignUpUseCase(provideUserRepository(context))
     }
 
     fun provideVocabularySetRepository(context: Context): VocabularySetRepository {

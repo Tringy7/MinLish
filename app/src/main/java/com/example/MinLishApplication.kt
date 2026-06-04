@@ -24,9 +24,9 @@ class MinLishApplication : Application() {
             if (userRepo.getUser() == null) {
                 userRepo.saveUser(
                     UserEntity(
-                        id = "local_user",
-                        name = "Hữu Trí Nguyễn",
                         email = "huutria22005@gmail.com",
+                        name = "Hữu Trí Nguyễn",
+                        passwordHash = "local_password_hash",
                         avatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop",
                         englishLevel = "B2 - Upper Intermediate",
                         streakCount = 5,

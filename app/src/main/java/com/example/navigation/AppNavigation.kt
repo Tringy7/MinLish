@@ -48,7 +48,7 @@ fun AppNavigation(
         // --- Authentication Gate ---
         composable("auth") {
             LoginRegisterScreen(
-                viewModel = viewModel,
+                vocabularyViewModel = viewModel,
                 onLoginSuccess = {
                     navController.navigate("main") {
                         popUpTo("auth") { inclusive = true }
