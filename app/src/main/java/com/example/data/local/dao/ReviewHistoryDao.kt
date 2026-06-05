@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ReviewHistoryDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertHistory(history: ReviewHistoryEntity): Long
 
     @Query("SELECT * FROM review_history ORDER BY reviewedAt DESC LIMIT :limit")

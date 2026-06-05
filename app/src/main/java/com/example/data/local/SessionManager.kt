@@ -23,12 +23,11 @@ class SessionManager(private val context: Context) {
     }
 
     val currentUserId: Flow<Int?> = context.dataStore.data.map { preferences ->
-        val id = preferences[CURRENT_USER_ID]
-        if (id == null || id == -1) null else id
+        preferences[CURRENT_USER_ID]?.takeIf { it > 0 }
     }
 
     val currentProvider: Flow<AuthProvider?> = context.dataStore.data.map { preferences ->
-        preferences[CURRENT_PROVIDER]?.let { 
+        preferences[CURRENT_PROVIDER]?.takeIf { it.isNotBlank() }?.let { 
             try { AuthProvider.valueOf(it) } catch (e: Exception) { null }
         }
     }
@@ -42,10 +41,6 @@ class SessionManager(private val context: Context) {
     }
 
     suspend fun clearSession() {
-        context.dataStore.edit { preferences ->
-            preferences[IS_LOGGED_IN] = false
-            preferences[CURRENT_USER_ID] = -1
-            preferences[CURRENT_PROVIDER] = ""
-        }
+        context.dataStore.edit { it.clear() }
     }
 }

@@ -23,72 +23,90 @@ class AuthRepositoryImpl(
     override fun observeCurrentProvider(): Flow<AuthProvider?> = sessionManager.currentProvider
 
     override suspend fun login(email: String, password: String): Result<UserEntity> {
-        val user = userDao.findByEmail(email) ?: return Result.failure(Exception("Tài khoản không tồn tại"))
-        
-        if (user.provider != AuthProvider.LOCAL) {
-            return Result.failure(Exception("Tài khoản này được đăng nhập bằng Google"))
-        }
+        return try {
+            val normalizedEmail = email.trim().lowercase()
+            val user = userDao.findByEmail(normalizedEmail) ?: return Result.failure(Exception("Tài khoản không tồn tại"))
+            
+            if (user.provider != AuthProvider.LOCAL) {
+                return Result.failure(Exception("Tài khoản này được đăng nhập bằng Google"))
+            }
 
-        val isValid = PasswordHasher.verifyPassword(password, user.passwordHash ?: "")
-        return if (isValid) {
-            userDao.updateUser(user.copy(lastLoginAt = System.currentTimeMillis()))
-            sessionManager.saveSession(user.id, AuthProvider.LOCAL)
-            Result.success(user)
-        } else {
-            Result.failure(Exception("Mật khẩu không chính xác"))
+            val isValid = PasswordHasher.verifyPassword(password, user.passwordHash ?: "")
+            if (isValid) {
+                val updatedUser = user.copy(lastLoginAt = System.currentTimeMillis())
+                userDao.updateUser(updatedUser)
+                sessionManager.saveSession(updatedUser.id, AuthProvider.LOCAL)
+                Result.success(updatedUser)
+            } else {
+                Result.failure(Exception("Mật khẩu không chính xác"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
     override suspend fun register(name: String, email: String, password: String): Result<UserEntity> {
-        val existingUser = userDao.findByEmail(email)
-        if (existingUser != null) {
-            return Result.failure(Exception("Email đã tồn tại"))
-        }
+        return try {
+            val normalizedEmail = email.trim().lowercase()
+            val existingUser = userDao.findByEmail(normalizedEmail)
+            if (existingUser != null) {
+                return Result.failure(Exception("Email đã tồn tại"))
+            }
 
-        val newUser = UserEntity(
-            name = name,
-            email = email,
-            passwordHash = PasswordHasher.hashPassword(password),
-            provider = AuthProvider.LOCAL
-        )
-        val id = userDao.insertUser(newUser)
-        if (id == -1L) return Result.failure(Exception("Không thể tạo tài khoản"))
-        
-        val createdUser = newUser.copy(id = id.toInt())
-        sessionManager.saveSession(createdUser.id, AuthProvider.LOCAL)
-        return Result.success(createdUser)
+            val newUser = UserEntity(
+                name = name,
+                email = normalizedEmail,
+                passwordHash = PasswordHasher.hashPassword(password),
+                provider = AuthProvider.LOCAL
+            )
+            val id = userDao.insertUser(newUser)
+            if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản"))
+            
+            val createdUser = newUser.copy(id = id.toInt())
+            sessionManager.saveSession(createdUser.id, AuthProvider.LOCAL)
+            Result.success(createdUser)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     override suspend fun googleSignIn(email: String, displayName: String, avatarUrl: String): Result<UserEntity> {
-        val existingUser = userDao.findByEmail(email)
-        
-        if (existingUser != null) {
-            if (existingUser.provider != AuthProvider.GOOGLE) {
-                return Result.failure(Exception("Tài khoản này đã được đăng ký bằng mật khẩu. Vui lòng đăng nhập bằng Email và Password."))
-            }
-            // Login existing Google user
-            userDao.updateUser(existingUser.copy(
-                lastLoginAt = System.currentTimeMillis(),
-                avatarUrl = if (avatarUrl.isNotBlank()) avatarUrl else existingUser.avatarUrl,
-                name = if (displayName.isNotBlank()) displayName else existingUser.name
-            ))
-            sessionManager.saveSession(existingUser.id, AuthProvider.GOOGLE)
-            return Result.success(existingUser)
-        } else {
-            // Create new Google user
-            val newUser = UserEntity(
-                name = displayName,
-                email = email,
-                avatarUrl = avatarUrl,
-                provider = AuthProvider.GOOGLE,
-                passwordHash = null
-            )
-            val id = userDao.insertUser(newUser)
-            if (id == -1L) return Result.failure(Exception("Không thể tạo tài khoản Google"))
+        return try {
+            val normalizedEmail = email.trim().lowercase()
+            val existingUser = userDao.findByEmail(normalizedEmail)
             
-            val createdUser = newUser.copy(id = id.toInt())
-            sessionManager.saveSession(createdUser.id, AuthProvider.GOOGLE)
-            return Result.success(createdUser)
+            if (existingUser != null) {
+                if (existingUser.provider != AuthProvider.GOOGLE) {
+                    return Result.failure(Exception("Tài khoản này đã được đăng ký bằng mật khẩu. Vui lòng đăng nhập bằng Email và Password."))
+                }
+                // Login existing Google user
+                val updatedUser = existingUser.copy(
+                    lastLoginAt = System.currentTimeMillis(),
+                    avatarUrl = avatarUrl.ifBlank { existingUser.avatarUrl },
+                    name = displayName.ifBlank { existingUser.name }
+                )
+                userDao.updateUser(updatedUser)
+                sessionManager.saveSession(updatedUser.id, AuthProvider.GOOGLE)
+                Result.success(updatedUser)
+            } else {
+                // Create new Google user
+                val newUser = UserEntity(
+                    name = displayName,
+                    email = normalizedEmail,
+                    avatarUrl = avatarUrl,
+                    provider = AuthProvider.GOOGLE,
+                    passwordHash = null
+                )
+                val id = userDao.insertUser(newUser)
+                if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản Google"))
+                
+                val createdUser = newUser.copy(id = id.toInt())
+                sessionManager.saveSession(createdUser.id, AuthProvider.GOOGLE)
+                Result.success(createdUser)
+            }
+        } catch (e: Exception) {
+            // Log the error or handle it properly
+            Result.failure(e)
         }
     }
 

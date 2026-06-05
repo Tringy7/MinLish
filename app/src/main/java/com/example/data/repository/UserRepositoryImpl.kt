@@ -16,13 +16,13 @@ class UserRepositoryImpl(
     
     override fun getUserFlow(): Flow<UserEntity?> {
         return sessionManager.currentUserId.flatMapLatest { id ->
-            if (id != null && id != -1) userDao.getUserFlow(id) else flowOf(null)
+            if (id != null) userDao.getUserFlow(id) else flowOf(null)
         }
     }
 
     override suspend fun getUser(): UserEntity? {
         val id = sessionManager.currentUserId.first()
-        return if (id != null && id != -1) userDao.getUserById(id) else null
+        return if (id != null) userDao.getUserById(id) else null
     }
     
     override suspend fun findByEmail(email: String): UserEntity? = userDao.findByEmail(email)
