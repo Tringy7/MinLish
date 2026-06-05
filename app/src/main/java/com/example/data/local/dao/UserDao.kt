@@ -9,15 +9,20 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
     suspend fun findByEmail(email: String): UserEntity?
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertUser(user: UserEntity)
+    @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
+    suspend fun getUserById(id: Int): UserEntity?
 
-    @Query("SELECT * FROM users LIMIT 1")
-    fun getCurrentUserFlow(): Flow<UserEntity?>
+    @Query("SELECT * FROM users WHERE id = :id LIMIT 1")
+    fun getUserFlow(id: Int): Flow<UserEntity?>
 
-    @Query("SELECT * FROM users LIMIT 1")
-    suspend fun getCurrentUser(): UserEntity?
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertUser(user: UserEntity): Long
 
-    @Query("DELETE FROM users")
-    suspend fun deleteAllUsers()
+    @Update
+    suspend fun updateUser(user: UserEntity)
+
+    @Upsert
+    suspend fun upsertUser(user: UserEntity)
+
+    // Note: Do NOT use delete all users for logout
 }

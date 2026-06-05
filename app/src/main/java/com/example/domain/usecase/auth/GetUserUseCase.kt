@@ -1,10 +1,11 @@
 package com.example.domain.usecase.auth
 
 import com.example.data.local.entity.UserEntity
-import com.example.domain.repository.UserRepository
+import com.example.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.Flow
 
-class GetUserUseCase(private val repository: UserRepository) {
-    fun getFlow(): Flow<UserEntity?> = repository.getUserFlow()
-    suspend operator fun invoke(): UserEntity? = repository.getUser()
+class GetUserUseCase(private val repository: AuthRepository) {
+    fun getFlow(): Flow<UserEntity?> = repository.getCurrentUserFlow()
+    
+    suspend operator fun invoke(): UserEntity? = repository.getCurrentUser()
 }

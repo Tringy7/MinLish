@@ -26,6 +26,7 @@ class VocabularyViewModel(
     private val loginUseCase: LoginUseCase,
     private val signUpUseCase: SignUpUseCase,
     private val logoutUseCase: LogoutUseCase,
+    private val observeLoginStateUseCase: ObserveLoginStateUseCase,
     private val getDashboardStatsUseCase: GetDashboardStatsUseCase,
     private val getVocabularySetsUseCase: GetVocabularySetsUseCase,
     private val getWordsInSetUseCase: GetWordsInSetUseCase,
@@ -39,9 +40,8 @@ class VocabularyViewModel(
     val userState: StateFlow<UserEntity?> = getUserUseCase.getFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val isUserLoggedIn: StateFlow<Boolean> = userState
-        .map { it != null }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    val isUserLoggedIn: StateFlow<Boolean?> = observeLoginStateUseCase()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
@@ -98,9 +98,9 @@ class VocabularyViewModel(
         }
     }
 
-    fun signUp(email: String, name: String, password: String, englishLevel: String) {
+    fun signUp(email: String, name: String, password: String) {
         viewModelScope.launch {
-            signUpUseCase(email, name, password, englishLevel)
+            signUpUseCase(email, name, password)
         }
     }
 
@@ -142,9 +142,9 @@ class VocabularyViewModel(
         }
     }
 
-    fun addSet(name: String, description: String, tags: String) {
+    fun addSet(name: String, description: String, tags: String, level: String = "A1", category: String = "General") {
         viewModelScope.launch {
-            manageVocabularySetUseCase.addSet(name, description, tags)
+            manageVocabularySetUseCase.addSet(name, description, tags, level, category)
         }
     }
 
@@ -176,17 +176,18 @@ class VocabularyViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(VocabularyViewModel::class.java)) {
-                // Sử dụng lazy delegation để không khởi tạo repository ngay lập tức trên Main Thread
+                val authRepo by lazy { ServiceLocator.provideAuthRepository(context) }
                 val userRepo by lazy { ServiceLocator.provideUserRepository(context) }
                 val setRepo by lazy { ServiceLocator.provideVocabularySetRepository(context) }
                 val wordRepo by lazy { ServiceLocator.provideVocabularyWordRepository(context) }
                 val historyRepo by lazy { ServiceLocator.provideReviewHistoryRepository(context) }
                 
                 return VocabularyViewModel(
-                    getUserUseCase = GetUserUseCase(userRepo),
-                    loginUseCase = LoginUseCase(userRepo),
-                    signUpUseCase = SignUpUseCase(userRepo),
-                    logoutUseCase = LogoutUseCase(userRepo),
+                    getUserUseCase = GetUserUseCase(authRepo),
+                    loginUseCase = LoginUseCase(authRepo),
+                    signUpUseCase = SignUpUseCase(authRepo),
+                    logoutUseCase = LogoutUseCase(authRepo),
+                    observeLoginStateUseCase = ObserveLoginStateUseCase(authRepo),
                     getDashboardStatsUseCase = GetDashboardStatsUseCase(userRepo, wordRepo, historyRepo),
                     getVocabularySetsUseCase = GetVocabularySetsUseCase(setRepo),
                     getWordsInSetUseCase = GetWordsInSetUseCase(wordRepo),

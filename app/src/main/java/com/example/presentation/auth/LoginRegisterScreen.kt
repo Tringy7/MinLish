@@ -27,6 +27,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.di.ServiceLocator
 import com.example.presentation.VocabularyViewModel
@@ -42,15 +47,42 @@ fun LoginRegisterScreen(
 ) {
     val context = LocalContext.current
     val loginViewModel: LoginViewModel = viewModel(
-        factory = LoginViewModel.Factory(
-            loginUseCase = ServiceLocator.provideLoginUseCase(context),
-            signUpUseCase = ServiceLocator.provideSignUpUseCase(context)
-        )
+        factory = LoginViewModel.Factory(context)
     )
     
     val uiState by loginViewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // --- Google Sign-In Logic ---
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestEmail()
+            .requestProfile()
+            // .requestIdToken("YOUR_WEB_CLIENT_ID") // Uncomment and add ID after console setup
+            .build()
+    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            if (account != null) {
+                loginViewModel.googleSignIn(
+                    email = account.email ?: "",
+                    displayName = account.displayName ?: "",
+                    avatarUrl = account.photoUrl?.toString() ?: ""
+                )
+            }
+        } catch (e: ApiException) {
+            scope.launch { 
+                snackbarHostState.showSnackbar("Đăng nhập Google thất bại: ${e.statusCode}") 
+            }
+        }
+    }
 
     var isSignUp by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
@@ -245,7 +277,7 @@ fun LoginRegisterScreen(
                                     scope.launch { snackbarHostState.showSnackbar("Mật khẩu xác nhận không khớp") }
                                     return@Button
                                 }
-                                loginViewModel.signUp(email, name, password, englishLevel)
+                                loginViewModel.signUp(email, name, password)
                             } else {
                                 loginViewModel.login(email, password)
                             }
@@ -290,11 +322,10 @@ fun LoginRegisterScreen(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Google Login Button Simulated
+                    // Google Login Button
                     OutlinedButton(
                         onClick = {
-                            // Demo logic for simulation
-                            onLoginSuccess()
+                            launcher.launch(googleSignInClient.signInIntent)
                         },
                         modifier = Modifier
                             .fillMaxWidth()

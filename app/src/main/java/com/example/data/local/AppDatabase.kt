@@ -17,7 +17,7 @@ import com.example.data.local.entity.*
         VocabularyWordEntity::class,
         ReviewHistoryEntity::class
     ],
-    version = 3,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -37,7 +37,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "minlish_database"
-                )
+                ).createFromAsset("database/minlish_seed.db") // Temporarily commented out until the asset file is provided
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance

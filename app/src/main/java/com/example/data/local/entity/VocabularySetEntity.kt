@@ -9,6 +9,9 @@ data class VocabularySetEntity(
     val name: String,
     val description: String,
     val tags: String, // Comma separated tags
-    val userId: String = "local_user",
+    val level: String = "A1", // A1, A2, B1, B2, C1
+    val category: String = "General", // Family, Food, Business...
+    val isSystem: Boolean = false, // True for pre-packaged sets
+    val userId: Int?, // Map to UserEntity.id, null for system sets
     val createdAt: Long = System.currentTimeMillis()
 )

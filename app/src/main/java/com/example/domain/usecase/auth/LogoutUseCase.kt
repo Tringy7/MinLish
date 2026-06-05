@@ -1,8 +1,8 @@
 package com.example.domain.usecase.auth
 
-import com.example.domain.repository.UserRepository
+import com.example.domain.repository.AuthRepository
 
-class LogoutUseCase(private val repository: UserRepository) {
+class LogoutUseCase(private val repository: AuthRepository) {
     suspend operator fun invoke() {
         repository.logout()
     }
