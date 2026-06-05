@@ -1,7 +1,7 @@
 package com.example.domain.usecase.auth
 
 import com.example.domain.repository.UserRepository
-import com.example.util.HashUtils
+import com.example.utils.HashUtils
 
 sealed class LoginResult {
     object Success : LoginResult()
