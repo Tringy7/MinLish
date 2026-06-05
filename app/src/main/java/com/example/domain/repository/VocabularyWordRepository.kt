@@ -14,6 +14,7 @@ interface VocabularyWordRepository {
     fun getTotalWordsCountFlow(): Flow<Int>
     fun getLearnedWordsCountFlow(): Flow<Int>
     suspend fun insertWord(word: VocabularyWordEntity): Int
+    suspend fun insertWords(words: List<VocabularyWordEntity>)
     suspend fun updateWord(word: VocabularyWordEntity)
     suspend fun deleteWord(word: VocabularyWordEntity)
 }

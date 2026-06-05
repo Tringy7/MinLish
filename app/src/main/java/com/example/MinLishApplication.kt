@@ -55,6 +55,9 @@ class MinLishApplication : Application() {
                         meaning = "Thực tiễn, thực tế, giải quyết vấn đề khách quan",
                         example = "He took a pragmatic approach to solving the complex software bug.",
                         note = "Commonly tested. Synonyms: practical, realistic.",
+                        descriptionEN = "Dealing with things sensibly and realistically in a way that is based on practical rather than theoretical considerations.",
+                        collocations = "Pragmatic approach, pragmatic solution, pragmatic policy",
+                        relatedWords = "Practical, realistic, logical, utilitarian",
                         isFavorite = true
                     )
                 )
@@ -66,6 +69,9 @@ class MinLishApplication : Application() {
                         meaning = "Hùng biện, có tài ăn nói lưu loát, thuyết phục",
                         example = "She delivered an eloquent argument that persuaded the board of examiners.",
                         note = "Adjective. Noun form is 'eloquence'.",
+                        descriptionEN = "Fluent or persuasive in speaking or writing.",
+                        collocations = "Eloquent speaker, eloquent plea, eloquent testimony",
+                        relatedWords = "Fluent, articulate, persuasive, silver-tongued",
                         isFavorite = false
                     )
                 )
@@ -77,6 +83,9 @@ class MinLishApplication : Application() {
                         meaning = "Có mặt ở khắp mọi nơi, phổ biến rộng rãi",
                         example = "In the modern age, smartphones and mobile applications are ubiquitous.",
                         note = "Highly professional word. Synonyms: omnipresent, widespread.",
+                        descriptionEN = "Present, appearing, or found everywhere.",
+                        collocations = "Ubiquitous presence, ubiquitous technology, ubiquitous influence",
+                        relatedWords = "Omnipresent, widespread, pervasive, ever-present",
                         isFavorite = true
                     )
                 )
@@ -98,6 +107,9 @@ class MinLishApplication : Application() {
                         meaning = "Chúc may mắn! (Nói trước khi lên sân khấu)",
                         example = "I know you can do it. Break a leg in your presentation tomorrow!",
                         note = "Never literal. Used to prevent bad luck in theatrical traditions.",
+                        descriptionEN = "A superstitious way to say 'good luck' to a performer before they go on stage.",
+                        collocations = "Go out there and break a leg!",
+                        relatedWords = "Good luck, knock 'em dead, best of luck",
                         isFavorite = false
                     )
                 )
@@ -109,6 +121,9 @@ class MinLishApplication : Application() {
                         meaning = "Cắn răng chịu đựng, chấp nhận đối mặt khó khăn",
                         example = "I hate doing examinations, but I just have to bite the bullet.",
                         note = "Derived from soldiers biting bullets during battlefield medicine.",
+                        descriptionEN = "To endure a painful or otherwise unpleasant situation that is seen as unavoidable.",
+                        collocations = "Decide to bite the bullet, finally bite the bullet",
+                        relatedWords = "Face the music, tough it out, grin and bear it",
                         isFavorite = true
                     )
                 )

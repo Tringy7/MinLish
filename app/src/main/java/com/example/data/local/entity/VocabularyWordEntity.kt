@@ -25,6 +25,9 @@ data class VocabularyWordEntity(
     val meaning: String,
     val example: String,
     val note: String,
+    val descriptionEN: String = "",
+    val collocations: String = "",
+    val relatedWords: String = "",
     val isFavorite: Boolean = false,
     
     // Spaced Repetition State (SM-2 parameters)

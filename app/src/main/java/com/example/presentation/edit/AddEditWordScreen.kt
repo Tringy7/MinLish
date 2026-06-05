@@ -10,6 +10,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -32,7 +34,10 @@ fun AddEditWordScreen(
     var meaning by remember { mutableStateOf("") }
     var example by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
-    
+    var descriptionEN by remember { mutableStateOf("") }
+    var collocations by remember { mutableStateOf("") }
+    var relatedWords by remember { mutableStateOf("") }
+
     var existingWordEntity by remember { mutableStateOf<VocabularyWordEntity?>(null) }
 
     // Load existing word state if in Edit mode
@@ -46,6 +51,9 @@ fun AddEditWordScreen(
                 meaning = loaded.meaning
                 example = loaded.example
                 note = loaded.note
+                descriptionEN = loaded.descriptionEN
+                collocations = loaded.collocations
+                relatedWords = loaded.relatedWords
             }
         }
     }
@@ -128,6 +136,30 @@ fun AddEditWordScreen(
                 minLines = 2,
                 maxLines = 4
             )
+            // English Description
+            OutlinedTextField(
+                value = descriptionEN,
+                onValueChange = { descriptionEN = it },
+                label = { Text("Mô tả tiếng Anh") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+            // Collocations
+            OutlinedTextField(
+                value = collocations,
+                onValueChange = { collocations = it },
+                label = { Text("Collocations (Các cụm từ đi kèm)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
+            // Related Words
+            OutlinedTextField(
+                value = relatedWords,
+                onValueChange = { relatedWords = it },
+                label = { Text("Từ liên quan (Đồng nghĩa/Trái nghĩa)") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            )
 
             OutlinedTextField(
                 value = note,
@@ -154,7 +186,10 @@ fun AddEditWordScreen(
                                 ipa = pronunciation.trim(),
                                 meaningTxt = meaning.trim(),
                                 exampleTxt = example.trim(),
-                                noteTxt = note.trim()
+                                noteTxt = note.trim(),
+                                descriptionEN = descriptionEN.trim(),
+                                collocations = collocations.trim(),
+                                relatedWords = relatedWords.trim()
                             )
                         } else {
                             existingWordEntity?.let { oldWord ->
@@ -164,7 +199,11 @@ fun AddEditWordScreen(
                                         pronunciation = pronunciation.trim(),
                                         meaning = meaning.trim(),
                                         example = example.trim(),
-                                        note = note.trim()
+                                        note = note.trim(),
+                                        descriptionEN = descriptionEN.trim(),
+                                        collocations = collocations.trim(),
+                                        relatedWords = relatedWords.trim()
+
                                     )
                                 )
                             }

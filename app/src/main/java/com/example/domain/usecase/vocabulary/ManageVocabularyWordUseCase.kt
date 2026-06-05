@@ -10,7 +10,10 @@ class ManageVocabularyWordUseCase(private val repository: VocabularyWordReposito
         ipa: String,
         meaningTxt: String,
         exampleTxt: String,
-        noteTxt: String
+        noteTxt: String,
+        descriptionENTxt: String,
+        collocationsTxt: String,
+        relatedWordsTxt: String
     ): Int {
         if (wordTxt.isBlank() || meaningTxt.isBlank()) return -1
         return repository.insertWord(
@@ -20,7 +23,10 @@ class ManageVocabularyWordUseCase(private val repository: VocabularyWordReposito
                 pronunciation = ipa,
                 meaning = meaningTxt,
                 example = exampleTxt,
-                note = noteTxt
+                note = noteTxt,
+                descriptionEN = descriptionENTxt,
+                collocations = collocationsTxt,
+                relatedWords = relatedWordsTxt
             )
         )
     }
