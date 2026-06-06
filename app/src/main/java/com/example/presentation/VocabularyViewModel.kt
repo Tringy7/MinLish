@@ -35,6 +35,9 @@ class VocabularyViewModel(
     private val manageVocabularyWordUseCase: ManageVocabularyWordUseCase,
     private val getDueWordsUseCase: GetDueWordsUseCase,
     private val reviewWordUseCase: ReviewWordUseCase,
+    private val updateEnglishLevelUseCase: UpdateEnglishLevelUseCase,
+    private val exportWordsUseCase: ExportWordsUseCase,
+    private val importWordsUseCase: ImportWordsUseCase,
     private val updateProfileUseCase: UpdateProfileUseCase,
 ) : ViewModel() {
 
@@ -120,9 +123,9 @@ class VocabularyViewModel(
         _searchQuery.value = query
     }
 
-    fun addWord(setId: Int, wordTxt: String, ipa: String, meaningTxt: String, exampleTxt: String, noteTxt: String) {
+    fun addWord(setId: Int, wordTxt: String, ipa: String, meaningTxt: String, exampleTxt: String, noteTxt: String, descriptionEN: String, collocations: String, relatedWords: String) {
         viewModelScope.launch {
-            manageVocabularyWordUseCase.addWord(setId, wordTxt, ipa, meaningTxt, exampleTxt, noteTxt)
+            manageVocabularyWordUseCase.addWord(setId, wordTxt, ipa, meaningTxt, exampleTxt, noteTxt, descriptionEN, collocations, relatedWords)
         }
     }
 
@@ -174,6 +177,19 @@ class VocabularyViewModel(
         }
     }
 
+    fun exportWords(setId: Int, onResult: (String) -> Unit) {
+        viewModelScope.launch {
+            val csvData = exportWordsUseCase(setId)
+            onResult(csvData)
+        }
+    }
+
+    fun importWords(setId: Int, csvData: String) {
+        viewModelScope.launch {
+            importWordsUseCase(setId, csvData)
+        }
+    }
+
     class Factory(private val context: Context) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -205,6 +221,9 @@ class VocabularyViewModel(
                     manageVocabularyWordUseCase = ManageVocabularyWordUseCase(wordRepo),
                     getDueWordsUseCase = GetDueWordsUseCase(wordRepo),
                     reviewWordUseCase = ReviewWordUseCase(wordRepo, historyRepo, UpdateStreakUseCase(userRepo)),
+                    updateEnglishLevelUseCase = UpdateEnglishLevelUseCase(userRepo),
+                    exportWordsUseCase = ExportWordsUseCase(wordRepo),
+                    importWordsUseCase = ImportWordsUseCase(wordRepo)
                     updateProfileUseCase = UpdateProfileUseCase(userRepo)
                 ) as T
             }

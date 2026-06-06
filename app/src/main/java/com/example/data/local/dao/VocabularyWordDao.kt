@@ -42,6 +42,8 @@ interface VocabularyWordDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertWord(word: VocabularyWordEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertWords(words: List<VocabularyWordEntity>)
     @Upsert
     suspend fun upsertWord(word: VocabularyWordEntity)
 

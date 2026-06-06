@@ -19,6 +19,7 @@ class VocabularyWordRepositoryImpl(
     override fun getTotalWordsCountFlow(): Flow<Int> = vocabularyWordDao.getTotalWordsCountFlow()
     override fun getLearnedWordsCountFlow(): Flow<Int> = vocabularyWordDao.getLearnedWordsCountFlow()
     override suspend fun insertWord(word: VocabularyWordEntity): Int = vocabularyWordDao.insertWord(word).toInt()
+    override suspend fun insertWords(words: List<VocabularyWordEntity>) = vocabularyWordDao.insertWords(words)
     override suspend fun updateWord(word: VocabularyWordEntity) = vocabularyWordDao.updateWord(word)
     override suspend fun deleteWord(word: VocabularyWordEntity) = vocabularyWordDao.deleteWord(word)
 }
