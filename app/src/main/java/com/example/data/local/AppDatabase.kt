@@ -55,7 +55,7 @@ abstract class AppDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+                INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "minlish_database"
@@ -64,8 +64,7 @@ abstract class AppDatabase : RoomDatabase() {
                 .addMigrations(MIGRATION_11_12, MIGRATION_12_13)
                 .fallbackToDestructiveMigrationOnDowngrade()
                 .build()
-                INSTANCE = instance
-                instance
+                .also { INSTANCE = it }
             }
         }
     }

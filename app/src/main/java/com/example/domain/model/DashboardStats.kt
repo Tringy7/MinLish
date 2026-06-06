@@ -6,6 +6,7 @@ data class DashboardStats(
     val currentStreak: Int = 0,
     val retentionRate: Int = 100,
     val dueTodayCount: Int = 0,
+    val newWordsTodayCount: Int = 0,
     val dailyActivities: List<DailyActivity> = emptyList()
 )
 

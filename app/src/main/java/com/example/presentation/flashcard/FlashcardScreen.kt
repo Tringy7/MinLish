@@ -119,23 +119,45 @@ fun FlashcardScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            IconButton(
+                                onClick = { if (currentIndex > 0) currentIndex-- },
+                                enabled = currentIndex > 0,
+                                modifier = Modifier.background(
+                                    if (currentIndex > 0) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                                    CircleShape
+                                )
+                            ) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Trước đó")
+                            }
+
                             Text(
-                                text = "Tiến trình: Card ${currentIndex + 1} / ${studySessionCards.size}",
+                                text = "Card ${currentIndex + 1} / ${studySessionCards.size}",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.primary
                             )
-                            Text(
-                                text = if (dueOnly) "Chế độ: Ôn tập ⏳" else "Chế độ: Học hết 📚",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+
+                            IconButton(
+                                onClick = { 
+                                    advanceSession(
+                                        size = studySessionCards.size,
+                                        currentIndex = currentIndex,
+                                        onIncrement = { currentIndex = it },
+                                        onFinish = { isSessionFinished = true }
+                                    )
+                                },
+                                modifier = Modifier.background(
+                                    MaterialTheme.colorScheme.secondaryContainer,
+                                    CircleShape
+                                )
+                            ) {
+                                Icon(Icons.Default.ArrowForward, contentDescription = "Tiếp theo")
+                            }
                         }
                         
                         Spacer(modifier = Modifier.height(8.dp))
                         
-                        val progress = (currentIndex.toFloat()) / studySessionCards.size.toFloat()
                         LinearProgressIndicator(
-                            progress = { progress },
+                            progress = { (currentIndex.toFloat() + 1) / studySessionCards.size.toFloat() },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(6.dp)
@@ -161,15 +183,36 @@ fun FlashcardScreen(
 
                     // SM-2 Spaced Repetition Rating Controller
                     Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Bạn có nhớ từ này không? Chọn mức độ:",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp),
-                            textAlign = TextAlign.Center
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Bạn có nhớ từ này không?",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    // Marking as Learned = 5 (Perfect) in SM-2 logic
+                                    viewModel.reviewWordResponse(currentWord, 4)
+                                    reviewsLoggedCount++
+                                    advanceSession(
+                                        size = studySessionCards.size,
+                                        currentIndex = currentIndex,
+                                        onIncrement = { currentIndex = it },
+                                        onFinish = { isSessionFinished = true }
+                                    )
+                                },
+                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2E7D32))
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Đã thuộc (Mastered)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),

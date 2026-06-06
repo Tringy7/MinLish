@@ -19,9 +19,7 @@ object ServiceLocator {
 
     private fun getDatabase(context: Context): AppDatabase {
         return database ?: synchronized(this) {
-            val db = AppDatabase.getDatabase(context)
-            database = db
-            db
+            database ?: AppDatabase.getDatabase(context).also { database = it }
         }
     }
 
