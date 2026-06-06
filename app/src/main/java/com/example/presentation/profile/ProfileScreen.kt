@@ -27,6 +27,7 @@ import coil.request.ImageRequest
 import com.example.domain.model.EnglishLevel
 import com.example.presentation.VocabularyViewModel
 import com.example.presentation.components.MinLishCard
+import com.example.utils.ReminderManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,6 +129,20 @@ fun ProfileScreen(
                         Text(text = "Nhắc học mỗi ngày", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                         Text(text = "WorkManager nhắc bạn lúc 20:00.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    Switch(
+                        checked = dailyNotificationEnabled,
+                        onCheckedChange = {
+                            dailyNotificationEnabled = it
+                            if (it) {
+                                ReminderManager.scheduleDailyReminder(context)
+                                Toast.makeText(context, "Đã bật: Lịch nhắc nhở hàng ngày (20:00).", Toast.LENGTH_SHORT).show()
+                            } else {
+                                ReminderManager.cancelDailyReminder(context)
+                                Toast.makeText(context, "Đã tắt lịch nhắc nhở hàng ngày.", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.testTag("switch_daily_reminder")
+                    )
                     Switch(checked = dailyNotificationEnabled, onCheckedChange = { dailyNotificationEnabled = it })
                 }
                 Spacer(modifier = Modifier.height(14.dp))
@@ -138,6 +153,20 @@ fun ProfileScreen(
                         Text(text = "Báo từ vựng đến hạn ôn", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                         Text(text = "Thông báo khi có từ đến hạn SM-2.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
+                    Switch(
+                        checked = reviewAlarmEnabled,
+                        onCheckedChange = {
+                            reviewAlarmEnabled = it
+                            if (it) {
+                                ReminderManager.scheduleReviewReminder(context)
+                                Toast.makeText(context, "Đã bật: Thông báo khi có từ đến hạn ôn tập.", Toast.LENGTH_SHORT).show()
+                            } else {
+                                ReminderManager.cancelReviewReminder(context)
+                                Toast.makeText(context, "Đã tắt cảnh báo từ đến hạn.", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.testTag("switch_due_reminder")
+                    )
                     Switch(checked = reviewAlarmEnabled, onCheckedChange = { reviewAlarmEnabled = it })
                 }
             }
