@@ -8,7 +8,8 @@ class UpdateStreakUseCase(private val repository: UserRepository) {
     suspend operator fun invoke() {
         val user = repository.getUser() ?: UserEntity(
             name = "Learner",
-            email = "learner@minlish.com"
+            email = "learner@minlish.com",
+            passwordHash = ""
         )
 
         val calendar = Calendar.getInstance()

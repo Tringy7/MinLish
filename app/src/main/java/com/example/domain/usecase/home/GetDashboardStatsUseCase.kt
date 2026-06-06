@@ -12,21 +12,31 @@ class GetDashboardStatsUseCase(
     private val historyRepository: ReviewHistoryRepository
 ) {
     operator fun invoke(): Flow<DashboardStats> {
+        val startOfToday = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
         return combine(
             userRepository.getUserFlow(),
             wordRepository.getTotalWordsCountFlow(),
-            wordRepository.getLearnedWordsCountFlow(),
+            historyRepository.getUniqueWordsReviewedSinceFlow(startOfToday),
+            wordRepository.getAllDueWordsFlow(System.currentTimeMillis()),
             historyRepository.getRecentHistoryFlow(7)
-        ) { user, total, learned, history ->
+        ) { user, total, learnedToday, dueWords, history ->
+            val dailyGoal = user?.dailyGoalWords ?: 20
+            
             DashboardStats(
                 totalWordsCount = total,
-                learnedWordsCount = learned,
+                learnedWordsCount = learnedToday, // Hiển thị số từ học/ôn hôm nay
                 currentStreak = user?.streakCount ?: 0,
                 retentionRate = calculateRetention(history),
-                dueTodayCount = 0,
+                dueTodayCount = dueWords.size,
                 dailyActivities = generateDailyActivities(history)
             )
-        }.flowOn(Dispatchers.Default) // Đảm bảo tính toán chạy trên background
+        }.flowOn(Dispatchers.Default)
     }
 
     private fun calculateRetention(history: List<com.example.data.local.entity.ReviewHistoryEntity>): Int {

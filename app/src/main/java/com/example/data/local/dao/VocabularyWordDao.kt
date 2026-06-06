@@ -36,8 +36,11 @@ interface VocabularyWordDao {
     @Query("SELECT COUNT(*) FROM vocabulary_words WHERE repetitions > 0")
     fun getLearnedWordsCountFlow(): Flow<Int>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertWord(word: VocabularyWordEntity): Long
+
+    @Upsert
+    suspend fun upsertWord(word: VocabularyWordEntity)
 
     @Update
     suspend fun updateWord(word: VocabularyWordEntity)
