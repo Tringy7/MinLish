@@ -24,7 +24,9 @@ typealias DailyActivity = com.example.domain.model.DailyActivity
 class VocabularyViewModel(
     private val getUserUseCase: GetUserUseCase,
     private val loginUseCase: LoginUseCase,
+    private val signUpUseCase: SignUpUseCase,
     private val logoutUseCase: LogoutUseCase,
+    private val observeLoginStateUseCase: ObserveLoginStateUseCase,
     private val getDashboardStatsUseCase: GetDashboardStatsUseCase,
     private val getVocabularySetsUseCase: GetVocabularySetsUseCase,
     private val getWordsInSetUseCase: GetWordsInSetUseCase,
@@ -35,10 +37,10 @@ class VocabularyViewModel(
     private val updateEnglishLevelUseCase: UpdateEnglishLevelUseCase,
 ) : ViewModel() {
 
-    private val _isUserLoggedIn = MutableStateFlow(value = true)
-    val isUserLoggedIn = _isUserLoggedIn.asStateFlow()
-
     val userState: StateFlow<UserEntity?> = getUserUseCase.getFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isUserLoggedIn: StateFlow<Boolean?> = observeLoginStateUseCase()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _searchQuery = MutableStateFlow("")
@@ -86,15 +88,26 @@ class VocabularyViewModel(
         .flowOn(Dispatchers.IO) // Chuyển luồng IO cho việc fetch data
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
-    fun login(email: String, name: String) {
+    init {
+        // userState and isUserLoggedIn are reactive now
+    }
+
+    fun login(email: String, password: String) {
         viewModelScope.launch {
-            loginUseCase(email, name)
-            _isUserLoggedIn.value = true
+            loginUseCase(email, password)
+        }
+    }
+
+    fun signUp(email: String, name: String, password: String) {
+        viewModelScope.launch {
+            signUpUseCase(email, name, password)
         }
     }
 
     fun logout() {
-        _isUserLoggedIn.value = logoutUseCase()
+        viewModelScope.launch {
+            logoutUseCase()
+        }
     }
 
     fun selectSet(setId: Int?) {
@@ -129,9 +142,9 @@ class VocabularyViewModel(
         }
     }
 
-    fun addSet(name: String, description: String, tags: String) {
+    fun addSet(name: String, description: String, tags: String, level: String = "A1", category: String = "General") {
         viewModelScope.launch {
-            manageVocabularySetUseCase.addSet(name, description, tags)
+            manageVocabularySetUseCase.addSet(name, description, tags, level, category)
         }
     }
 
@@ -163,16 +176,18 @@ class VocabularyViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(VocabularyViewModel::class.java)) {
-                // Sử dụng lazy delegation để không khởi tạo repository ngay lập tức trên Main Thread
+                val authRepo by lazy { ServiceLocator.provideAuthRepository(context) }
                 val userRepo by lazy { ServiceLocator.provideUserRepository(context) }
                 val setRepo by lazy { ServiceLocator.provideVocabularySetRepository(context) }
                 val wordRepo by lazy { ServiceLocator.provideVocabularyWordRepository(context) }
                 val historyRepo by lazy { ServiceLocator.provideReviewHistoryRepository(context) }
                 
                 return VocabularyViewModel(
-                    getUserUseCase = GetUserUseCase(userRepo),
-                    loginUseCase = LoginUseCase(userRepo),
-                    logoutUseCase = LogoutUseCase(),
+                    getUserUseCase = GetUserUseCase(authRepo),
+                    loginUseCase = LoginUseCase(authRepo),
+                    signUpUseCase = SignUpUseCase(authRepo),
+                    logoutUseCase = LogoutUseCase(authRepo),
+                    observeLoginStateUseCase = ObserveLoginStateUseCase(authRepo),
                     getDashboardStatsUseCase = GetDashboardStatsUseCase(userRepo, wordRepo, historyRepo),
                     getVocabularySetsUseCase = GetVocabularySetsUseCase(setRepo),
                     getWordsInSetUseCase = GetWordsInSetUseCase(wordRepo),

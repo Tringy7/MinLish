@@ -17,7 +17,7 @@ import com.example.data.local.entity.*
         VocabularyWordEntity::class,
         ReviewHistoryEntity::class
     ],
-    version = 1,
+    version = 11,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -38,6 +38,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "minlish_database"
                 )
+                // .createFromAsset("database/minlish_seed.db") // REMOVED: This was causing the database to reset every run due to missing asset file and fallbackToDestructiveMigration
+                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
