@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface ReviewHistoryRepository {
     suspend fun insertHistory(history: ReviewHistoryEntity)
     fun getRecentHistoryFlow(limit: Int): Flow<List<ReviewHistoryEntity>>
+    fun getAllHistoryFlow(): Flow<List<ReviewHistoryEntity>>
     fun getReviewCountSinceFlow(startTime: Long): Flow<Int>
     fun getUniqueWordsReviewedSinceFlow(startTime: Long): Flow<Int>
     fun getTotalReviewsFlow(): Flow<Int>

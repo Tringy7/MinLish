@@ -15,6 +15,7 @@ class VocabularyWordRepositoryImpl(
     override fun getDueWordsForSetFlow(setId: Int, timestamp: Long): Flow<List<VocabularyWordEntity>> = vocabularyWordDao.getDueWordsForSetFlow(setId, timestamp)
     override fun getAllDueWordsFlow(timestamp: Long): Flow<List<VocabularyWordEntity>> = vocabularyWordDao.getAllDueWordsFlow(timestamp)
     override suspend fun getAllDueWords(timestamp: Long): List<VocabularyWordEntity> = vocabularyWordDao.getAllDueWords(timestamp)
+    override fun getDueWordsCountFlow(timestamp: Long): Flow<Int> = vocabularyWordDao.getDueWordsCountFlow(timestamp)
     override fun getTotalWordsCountFlow(): Flow<Int> = vocabularyWordDao.getTotalWordsCountFlow()
     override fun getLearnedWordsCountFlow(): Flow<Int> = vocabularyWordDao.getLearnedWordsCountFlow()
     override suspend fun insertWord(word: VocabularyWordEntity): Int = vocabularyWordDao.insertWord(word).toInt()

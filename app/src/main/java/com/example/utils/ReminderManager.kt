@@ -13,8 +13,8 @@ object ReminderManager {
 
     fun scheduleDailyReminder(context: Context) {
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 14)
-            set(Calendar.MINUTE, 5)
+            set(Calendar.HOUR_OF_DAY, 15)
+            set(Calendar.MINUTE, 8)
             set(Calendar.SECOND, 0)
         }
 
@@ -48,6 +48,7 @@ object ReminderManager {
                     .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
                     .build()
             )
+//            .setInitialDelay(1, TimeUnit.MINUTES)
             .addTag(REVIEW_WORK_NAME)
             .build()
 

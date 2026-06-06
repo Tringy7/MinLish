@@ -132,6 +132,36 @@ fun AppNavigation(
                         )
                     }
                 }
+            ) { paddingValues ->
+                val innerModifier = Modifier.padding(paddingValues)
+                when (selectedTab) {
+                    0 -> HomeScreen(
+                        viewModel = viewModel,
+                        onSetSelected = { setId ->
+                            viewModel.selectSet(setId)
+                            navController.navigate("vocab_detail/$setId")
+                        },
+                        onStudyDue = {
+                            // Start general review study loop for ALL due words across all sets!
+                            viewModel.selectSet(-1)
+                            navController.navigate("flashcard/-1?dueOnly=true")
+                        },
+                        modifier = innerModifier
+                    )
+                    1 -> DashboardScreen(
+                        viewModel = viewModel,
+                        modifier = innerModifier
+                    )
+                    2 -> ProfileScreen(
+                        viewModel = viewModel,
+                        onLogout = {
+                            navController.navigate("auth") {
+                                popUpTo("main") { inclusive = true }
+                            }
+                        },
+                        modifier = innerModifier
+                    )
+                }
             }
 
             composable(

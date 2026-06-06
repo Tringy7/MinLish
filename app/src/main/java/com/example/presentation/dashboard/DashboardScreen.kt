@@ -3,6 +3,7 @@ package com.example.presentation.dashboard
 import androidx.compose.animation.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,12 +14,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -63,44 +66,21 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             GlassTitle(
-                title = "Thống Kê",
-                subtitle = "Thông số học & Lịch sử ghi nhớ SM-2"
+                title = "Dashboard",
+                subtitle = "Thông số học tập và tiến độ ghi nhớ"
             )
 
-            // Dynamic grid of scorecards
+            // --- 1. DASHBOARD STATS ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatMicroCard(
-                    title = "Tổng số từ",
-                    value = "${stats.totalWordsCount}",
-                    icon = Icons.Default.MenuBook,
-                    tint = MaterialTheme.colorScheme.primary,
-                    bgColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                    modifier = Modifier.weight(1f)
-                )
-
                 StatMicroCard(
                     title = "Từ đã học",
                     value = "${stats.learnedWordsCount}",
                     icon = Icons.Default.CheckCircle,
                     tint = Color(0xFF2E7D32),
                     bgColor = Color(0xFFE8F5E9),
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                StatMicroCard(
-                    title = "Tỉ lệ đúng",
-                    value = "${stats.retentionRate}%",
-                    icon = Icons.Default.Memory,
-                    tint = Color(0xFFD81B60),
-                    bgColor = Color(0xFFFCE4EC),
                     modifier = Modifier.weight(1f)
                 )
 
@@ -114,6 +94,17 @@ fun DashboardScreen(
                 )
             }
 
+            StatMicroCard(
+                title = "Độ chính xác (% Accuracy)",
+                value = "${stats.accuracy}%",
+                icon = Icons.Default.GpsFixed,
+                tint = Color(0xFFD81B60),
+                bgColor = Color(0xFFFCE4EC),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // --- 3. LEVEL ESTIMATION ---
+            LevelEstimationSection(level = stats.estimatedLevel, learnedCount = stats.learnedWordsCount)
             // Word Review Targets
             MinLishCard(modifier = Modifier.fillMaxWidth()) {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -193,47 +184,97 @@ fun DashboardScreen(
                 }
             }
 
-            // High Fidelity Charting using Canvas
-            MinLishCard(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag("progress_chart_container")
-            ) {
+            // --- 2. CHARTS ---
+            
+            // Daily Activity Chart
+            MinLishCard(modifier = Modifier.fillMaxWidth()) {
                 Text(
-                    text = "Hoạt động học 7 ngày gần nhất",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MaterialTheme.colorScheme.onSurface
+                    text = "Hoạt động hàng ngày",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
                 Text(
-                    text = "Số lượt ôn tập & kiểm tra từ vựng",
+                    text = "Số lượt ôn tập trong 7 ngày qua",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
                 Spacer(modifier = Modifier.height(24.dp))
+                StudyActivityChart(activities = stats.dailyActivities)
+            }
 
-                if (stats.dailyActivities.isEmpty() || stats.dailyActivities.all { it.count == 0 }) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Chưa có hoạt động học nào được ghi nhận. Hãy ôn từ ngay hôm nay!",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(16.dp)
-                        )
-                    }
-                } else {
-                    StudyActivityChart(
-                        activities = stats.dailyActivities,
-                        primaryColor = MaterialTheme.colorScheme.primary,
-                        secondaryColor = MaterialTheme.colorScheme.secondary
-                    )
-                }
+            // Retention Rate (Visualized as a simple progress or small line chart)
+            MinLishCard(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = "Tỉ lệ duy trì (Retention Rate)",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = "Khả năng ghi nhớ từ vựng của bạn: ${stats.retentionRate}%",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                LinearProgressIndicator(
+                    progress = { stats.retentionRate / 100f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = when {
+                        stats.retentionRate >= 90 -> "Tuyệt vời! Bạn đang nhớ rất tốt."
+                        stats.retentionRate >= 70 -> "Khá tốt. Hãy tiếp tục duy trì nhé."
+                        else -> "Cần cố gắng thêm để cải thiện trí nhớ."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun LevelEstimationSection(level: String, learnedCount: Int) {
+    MinLishCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.2f)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .background(MaterialTheme.colorScheme.secondary, RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.EmojiEvents,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondary,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(
+                    text = "Trình độ ước tính",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = level,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = MaterialTheme.colorScheme.secondary
+                )
+                Text(
+                    text = "Dựa trên $learnedCount từ đã học",
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
@@ -251,165 +292,49 @@ fun StatMicroCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
-        border = CardDefaults.outlinedCardBorder().copy(
-            brush = Brush.linearGradient(
-                listOf(
-                    MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    Color.Transparent
-                )
-            )
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
-                )
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(bgColor, RoundedCornerShape(10.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = tint,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(text = title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            Text(
-                text = value,
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    letterSpacing = (-0.5).sp
-                ),
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(text = value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-fun StudyActivityChart(
-    activities: List<DailyActivity>,
-    primaryColor: Color,
-    secondaryColor: Color
-) {
-    val maxCount = remember(activities) {
-        val m = if (activities.isEmpty()) 5 else activities.maxOf { it.count }
-        max(5, m)
-    }
-
-    val canvasHeight = 160.dp
+fun StudyActivityChart(activities: List<DailyActivity>) {
+    val maxCount = max(5, activities.maxOfOrNull { it.count } ?: 0)
     val textMeasurer = rememberTextMeasurer()
+    val primaryColor = MaterialTheme.colorScheme.primary
 
-    val labelStyle = MaterialTheme.typography.labelSmall.copy(
-        color = Color.Gray,
-        textAlign = TextAlign.Center
-    )
-    val valueStyle = MaterialTheme.typography.labelLarge.copy(
-        color = Color.DarkGray,
-        fontWeight = FontWeight.Bold
-    )
+    Canvas(modifier = Modifier.fillMaxWidth().height(150.dp)) {
+        val width = size.width
+        val height = size.height
+        val barWidth = width / (activities.size * 2f)
+        val spacing = width / activities.size
 
-    // Pre-calculate layouts to avoid expensive measurement during draw calls
-    val measuredLabels = remember(activities) {
-        activities.map { textMeasurer.measure(it.dayLabel, labelStyle) }
-    }
-    val measuredValues = remember(activities) {
-        activities.map { textMeasurer.measure("${it.count}", valueStyle) }
-    }
+        activities.forEachIndexed { index, activity ->
+            val fraction = activity.count.toFloat() / maxCount
+            val barHeight = height * 0.7f * fraction
+            val x = spacing * index + (spacing - barWidth) / 2
+            val y = height * 0.8f - barHeight
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(canvasHeight + 40.dp)
-    ) {
-        Canvas(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(canvasHeight)
-        ) {
-            val width = size.width
-            val height = size.height
-            val spacing = if (activities.isNotEmpty()) width / activities.size else 0f
+            drawRoundRect(
+                color = primaryColor,
+                topLeft = Offset(x, y),
+                size = Size(barWidth, barHeight),
+                cornerRadius = CornerRadius(4.dp.toPx())
+            )
 
-            if (spacing == 0f) return@Canvas
-
-            // Draw horizontal dotted gridlines
-            val gridLines = 3
-            for (i in 0..gridLines) {
-                val gridY = (height / gridLines) * i
-                drawLine(
-                    color = Color.Gray.copy(alpha = 0.15f),
-                    start = Offset(0f, gridY),
-                    end = Offset(width, gridY),
-                    strokeWidth = 1.dp.toPx()
-                )
-            }
-
-            // Draw bars
-            activities.forEachIndexed { index, activity ->
-                val barWidth = 36.dp.toPx()
-                val fraction = activity.count.toFloat() / maxCount.toFloat()
-
-                // Set bounds
-                val drawHeight = (height * 0.82f) * fraction
-                val x = (spacing * index) + (spacing / 2) - (barWidth / 2)
-                val y = height - drawHeight - 16.dp.toPx()
-
-                // Draw solid background round bar
-                drawRoundRect(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            primaryColor.copy(alpha = 0.9f),
-                            secondaryColor.copy(alpha = 0.6f)
-                        )
-                    ),
-                    topLeft = Offset(x, y),
-                    size = Size(barWidth, drawHeight),
-                    cornerRadius = CornerRadius(10.dp.toPx(), 10.dp.toPx())
-                )
-
-                // Render reviews count text above bars using cached layout
-                if (activity.count > 0) {
-                    val textResult = measuredValues[index]
-                    drawText(
-                        textLayoutResult = textResult,
-                        topLeft = Offset(
-                            x + (barWidth / 2) - (textResult.size.width / 2),
-                            y - textResult.size.height - 4.dp.toPx()
-                        )
-                    )
-                }
-
-                // Render weekday label under bars using cached layout
-                val labelResult = measuredLabels[index]
-                drawText(
-                    textLayoutResult = labelResult,
-                    topLeft = Offset(
-                        x + (barWidth / 2) - (labelResult.size.width / 2),
-                        height
-                    )
-                )
-            }
+            // Day label
+            drawText(
+                textLayoutResult = textMeasurer.measure(activity.dayLabel, style = androidx.compose.ui.text.TextStyle(fontSize = 10.sp)),
+                topLeft = Offset(x, height * 0.85f)
+            )
         }
     }
 }
