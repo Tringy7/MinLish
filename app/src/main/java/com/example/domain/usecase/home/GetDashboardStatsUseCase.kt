@@ -22,9 +22,25 @@ class GetDashboardStatsUseCase(
             wordRepository.getAllDueWordsFlow(now),
             historyRepository.getRecentHistoryFlow(7)
         ) { user, total, learned, dueWords, history ->
+        val startOfToday = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        return combine(
+            userRepository.getUserFlow(),
+            wordRepository.getTotalWordsCountFlow(),
+            historyRepository.getUniqueWordsReviewedSinceFlow(startOfToday),
+            wordRepository.getAllDueWordsFlow(System.currentTimeMillis()),
+            historyRepository.getRecentHistoryFlow(7)
+        ) { user, total, learnedToday, dueWords, history ->
+            val dailyGoal = user?.dailyGoalWords ?: 20
+            
             DashboardStats(
                 totalWordsCount = total,
-                learnedWordsCount = learned,
+                learnedWordsCount = learnedToday, // Hiển thị số từ học/ôn hôm nay
                 currentStreak = user?.streakCount ?: 0,
                 retentionRate = calculateRetention(history),
                 dueTodayCount = dueWords.size,

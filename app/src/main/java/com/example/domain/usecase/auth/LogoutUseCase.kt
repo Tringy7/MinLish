@@ -1,8 +1,9 @@
 package com.example.domain.usecase.auth
 
-class LogoutUseCase {
-    operator fun invoke(): Boolean {
-        // Here we can perform logout operations, returning false for isUserLoggedIn state
-        return false
+import com.example.domain.repository.AuthRepository
+
+class LogoutUseCase(private val repository: AuthRepository) {
+    suspend operator fun invoke() {
+        repository.logout()
     }
 }

@@ -6,5 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface UserRepository {
     fun getUserFlow(): Flow<UserEntity?>
     suspend fun getUser(): UserEntity?
+    suspend fun findByEmail(email: String): UserEntity?
     suspend fun saveUser(user: UserEntity)
+    suspend fun logout()
 }
