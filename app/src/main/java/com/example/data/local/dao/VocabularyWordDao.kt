@@ -29,18 +29,23 @@ interface VocabularyWordDao {
     @Query("SELECT * FROM vocabulary_words WHERE nextReviewTimestamp <= :currentTimestamp")
     suspend fun getAllDueWords(currentTimestamp: Long): List<VocabularyWordEntity>
 
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE nextReviewTimestamp <= :currentTimestamp")
+    fun getDueWordsCountFlow(currentTimestamp: Long): Flow<Int>
+
     @Query("SELECT COUNT(*) FROM vocabulary_words")
     fun getTotalWordsCountFlow(): Flow<Int>
 
-    // Count of words that have been studied at least once (repetitions > 0)
-    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE repetitions > 0")
+    // Count of words that have been studied at least once (lastReviewedTimestamp > 0)
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE lastReviewedTimestamp > 0")
     fun getLearnedWordsCountFlow(): Flow<Int>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertWord(word: VocabularyWordEntity): Long
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertWords(words: List<VocabularyWordEntity>)
+    @Upsert
+    suspend fun upsertWord(word: VocabularyWordEntity)
 
     @Update
     suspend fun updateWord(word: VocabularyWordEntity)

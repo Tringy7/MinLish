@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.di.ServiceLocator
 import com.example.data.local.entity.*
+import com.example.domain.model.EnglishLevel
 import com.example.domain.usecase.auth.*
 import com.example.domain.usecase.home.*
 import com.example.domain.usecase.vocabulary.*
@@ -24,7 +25,9 @@ typealias DailyActivity = com.example.domain.model.DailyActivity
 class VocabularyViewModel(
     private val getUserUseCase: GetUserUseCase,
     private val loginUseCase: LoginUseCase,
+    private val signUpUseCase: SignUpUseCase,
     private val logoutUseCase: LogoutUseCase,
+    private val observeLoginStateUseCase: ObserveLoginStateUseCase,
     private val getDashboardStatsUseCase: GetDashboardStatsUseCase,
     private val getVocabularySetsUseCase: GetVocabularySetsUseCase,
     private val getWordsInSetUseCase: GetWordsInSetUseCase,
@@ -35,19 +38,20 @@ class VocabularyViewModel(
     private val updateEnglishLevelUseCase: UpdateEnglishLevelUseCase,
     private val exportWordsUseCase: ExportWordsUseCase,
     private val importWordsUseCase: ImportWordsUseCase,
+    private val updateProfileUseCase: UpdateProfileUseCase,
 ) : ViewModel() {
 
-    private val _isUserLoggedIn = MutableStateFlow(value = true)
-    val isUserLoggedIn = _isUserLoggedIn.asStateFlow()
-
     val userState: StateFlow<UserEntity?> = getUserUseCase.getFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isUserLoggedIn: StateFlow<Boolean?> = observeLoginStateUseCase()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
     val wordSets: StateFlow<List<VocabularySetEntity>> = _searchQuery
-        .debounce(300) // Tránh search quá dồn dập
+        .debounce(300) 
         .distinctUntilChanged()
         .flatMapLatest { query ->
             getVocabularySetsUseCase(query)
@@ -69,7 +73,12 @@ class VocabularyViewModel(
 
     val wordsInCurrentSet: StateFlow<List<VocabularyWordEntity>> = _currentSetId
         .flatMapLatest { id ->
-            getWordsInSetUseCase(id)
+            if (id == -1) {
+                // Return all words in the system for "Global Study"
+                getDueWordsUseCase() 
+            } else {
+                getWordsInSetUseCase(id)
+            }
         }
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -85,18 +94,25 @@ class VocabularyViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val dashboardStats: StateFlow<DashboardStats> = getDashboardStatsUseCase()
-        .flowOn(Dispatchers.IO) // Chuyển luồng IO cho việc fetch data
+        .flowOn(Dispatchers.IO) 
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
-    fun login(email: String, name: String) {
+    fun login(email: String, password: String) {
         viewModelScope.launch {
-            loginUseCase(email, name)
-            _isUserLoggedIn.value = true
+            loginUseCase(email, password)
+        }
+    }
+
+    fun signUp(email: String, name: String, password: String, englishLevel: EnglishLevel, learningGoal: String) {
+        viewModelScope.launch {
+            signUpUseCase(name, email, password, englishLevel, learningGoal)
         }
     }
 
     fun logout() {
-        _isUserLoggedIn.value = logoutUseCase()
+        viewModelScope.launch {
+            logoutUseCase()
+        }
     }
 
     fun selectSet(setId: Int?) {
@@ -131,9 +147,9 @@ class VocabularyViewModel(
         }
     }
 
-    fun addSet(name: String, description: String, tags: String) {
+    fun addSet(name: String, description: String, tags: String, level: EnglishLevel = EnglishLevel.A1, category: String = "General") {
         viewModelScope.launch {
-            manageVocabularySetUseCase.addSet(name, description, tags)
+            manageVocabularySetUseCase.addSet(name, description, tags, level, category)
         }
     }
 
@@ -149,9 +165,9 @@ class VocabularyViewModel(
         }
     }
 
-    fun updateEnglishLevel(level: String) {
+    fun updateProfile(level: EnglishLevel, goal: String) {
         viewModelScope.launch {
-            updateEnglishLevelUseCase(level)
+            updateProfileUseCase(level, goal)
         }
     }
 
@@ -178,16 +194,26 @@ class VocabularyViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(VocabularyViewModel::class.java)) {
-                // Sử dụng lazy delegation để không khởi tạo repository ngay lập tức trên Main Thread
+                // Initialize repositories and UseCases
+                // We access the repositories here, which triggers ServiceLocator. 
+                // To avoid blocking the main thread significantly, we ensure singletons are pre-warmed if possible.
+                val appContext = context.applicationContext
+                val userRepo = ServiceLocator.provideUserRepository(appContext)
+                val setRepo = ServiceLocator.provideVocabularySetRepository(appContext)
+                val wordRepo = ServiceLocator.provideVocabularyWordRepository(appContext)
+                val historyRepo = ServiceLocator.provideReviewHistoryRepository(appContext)
+                val authRepo by lazy { ServiceLocator.provideAuthRepository(context) }
                 val userRepo by lazy { ServiceLocator.provideUserRepository(context) }
                 val setRepo by lazy { ServiceLocator.provideVocabularySetRepository(context) }
                 val wordRepo by lazy { ServiceLocator.provideVocabularyWordRepository(context) }
                 val historyRepo by lazy { ServiceLocator.provideReviewHistoryRepository(context) }
                 
                 return VocabularyViewModel(
-                    getUserUseCase = GetUserUseCase(userRepo),
-                    loginUseCase = LoginUseCase(userRepo),
-                    logoutUseCase = LogoutUseCase(),
+                    getUserUseCase = GetUserUseCase(authRepo),
+                    loginUseCase = LoginUseCase(authRepo),
+                    signUpUseCase = SignUpUseCase(authRepo),
+                    logoutUseCase = LogoutUseCase(authRepo),
+                    observeLoginStateUseCase = ObserveLoginStateUseCase(authRepo),
                     getDashboardStatsUseCase = GetDashboardStatsUseCase(userRepo, wordRepo, historyRepo),
                     getVocabularySetsUseCase = GetVocabularySetsUseCase(setRepo),
                     getWordsInSetUseCase = GetWordsInSetUseCase(wordRepo),
@@ -198,6 +224,7 @@ class VocabularyViewModel(
                     updateEnglishLevelUseCase = UpdateEnglishLevelUseCase(userRepo),
                     exportWordsUseCase = ExportWordsUseCase(wordRepo),
                     importWordsUseCase = ImportWordsUseCase(wordRepo)
+                    updateProfileUseCase = UpdateProfileUseCase(userRepo)
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")

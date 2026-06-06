@@ -1,15 +1,10 @@
 package com.example.domain.usecase.auth
 
 import com.example.data.local.entity.UserEntity
-import com.example.domain.repository.UserRepository
+import com.example.domain.repository.AuthRepository
 
-class LoginUseCase(private val repository: UserRepository) {
-    suspend operator fun invoke(email: String, name: String) {
-        val user = UserEntity(
-            id = "local_user",
-            name = name,
-            email = email
-        )
-        repository.saveUser(user)
+class LoginUseCase(private val repository: AuthRepository) {
+    suspend operator fun invoke(email: String, password: String): Result<UserEntity> {
+        return repository.login(email, password)
     }
 }
