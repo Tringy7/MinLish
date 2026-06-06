@@ -23,9 +23,28 @@ class GetDashboardStatsUseCase(
             wordRepository.getDueWordsCountFlow(now),
             historyRepository.getAllHistoryFlow()
         ) { user, total, learned, due, history ->
+            wordRepository.getAllDueWordsFlow(now),
+            historyRepository.getRecentHistoryFlow(7)
+        ) { user, total, learned, dueWords, history ->
+        val startOfToday = java.util.Calendar.getInstance().apply {
+            set(java.util.Calendar.HOUR_OF_DAY, 0)
+            set(java.util.Calendar.MINUTE, 0)
+            set(java.util.Calendar.SECOND, 0)
+            set(java.util.Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        return combine(
+            userRepository.getUserFlow(),
+            wordRepository.getTotalWordsCountFlow(),
+            historyRepository.getUniqueWordsReviewedSinceFlow(startOfToday),
+            wordRepository.getAllDueWordsFlow(System.currentTimeMillis()),
+            historyRepository.getRecentHistoryFlow(7)
+        ) { user, total, learnedToday, dueWords, history ->
+            val dailyGoal = user?.dailyGoalWords ?: 20
+            
             DashboardStats(
                 totalWordsCount = total,
-                learnedWordsCount = learned,
+                learnedWordsCount = learnedToday, // Hiển thị số từ học/ôn hôm nay
                 currentStreak = user?.streakCount ?: 0,
                 accuracy = calculateAccuracy(history),
                 retentionRate = calculateRetention(history),
@@ -41,6 +60,11 @@ class GetDashboardStatsUseCase(
         // Accuracy = % of reviews that are Good (3) or Easy (4)
         val successfulReviews = history.count { it.rating >= 3 }
         return (successfulReviews * 100) / history.size
+                dueTodayCount = dueWords.size,
+                newWordsTodayCount = total - learned,
+                dailyActivities = generateDailyActivities(history)
+            )
+        }.flowOn(Dispatchers.Default)
     }
 
     private fun calculateRetention(history: List<ReviewHistoryEntity>): Int {
@@ -78,5 +102,30 @@ class GetDashboardStatsUseCase(
         }
 
         return last7Days.map { DailyActivity(it.key, it.value) }.reversed()
+    private fun generateDailyActivities(history: List<com.example.data.local.entity.ReviewHistoryEntity>): List<DailyActivity> {
+        val sdf = SimpleDateFormat("EEE", Locale.getDefault())
+        val calendar = Calendar.getInstance()
+        
+        // Initialize last 7 days with 0 counts
+        val activitiesMap = mutableMapOf<String, Int>()
+        val dayLabels = mutableListOf<String>()
+        
+        for (i in 6 downTo 0) {
+            val tempCal = Calendar.getInstance()
+            tempCal.add(Calendar.DAY_OF_YEAR, -i)
+            val label = sdf.format(tempCal.time)
+            dayLabels.add(label)
+            activitiesMap[label] = 0
+        }
+
+        // Aggregate history counts
+        history.forEach { entry ->
+            val entryDate = sdf.format(Date(entry.reviewedAt))
+            if (activitiesMap.containsKey(entryDate)) {
+                activitiesMap[entryDate] = activitiesMap[entryDate]!! + 1
+            }
+        }
+
+        return dayLabels.map { DailyActivity(it, activitiesMap[it] ?: 0) }
     }
 }

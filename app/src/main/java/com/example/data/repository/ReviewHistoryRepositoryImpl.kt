@@ -11,6 +11,8 @@ class ReviewHistoryRepositoryImpl(
     override suspend fun insertHistory(history: ReviewHistoryEntity) = reviewHistoryDao.insertHistory(history).let { Unit }
     override fun getRecentHistoryFlow(limit: Int): Flow<List<ReviewHistoryEntity>> = reviewHistoryDao.getRecentHistoryFlow(limit)
     override fun getAllHistoryFlow(): Flow<List<ReviewHistoryEntity>> = reviewHistoryDao.getAllHistoryFlow()
+    override fun getReviewCountSinceFlow(startTime: Long): Flow<Int> = reviewHistoryDao.getReviewCountSinceFlow(startTime)
+    override fun getUniqueWordsReviewedSinceFlow(startTime: Long): Flow<Int> = reviewHistoryDao.getUniqueWordsReviewedSinceFlow(startTime)
     override fun getTotalReviewsFlow(): Flow<Int> = reviewHistoryDao.getTotalReviewsFlow()
     override suspend fun getAllHistories(): List<ReviewHistoryEntity> = reviewHistoryDao.getAllHistories()
 }

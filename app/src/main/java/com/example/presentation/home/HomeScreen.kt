@@ -239,10 +239,12 @@ fun GreetingHeader(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
-                    val progressPercent = if (stats.totalWordsCount > 0) {
+                    val progressPercent = if (user != null && user!!.dailyGoalWords > 0) {
+                        (stats.learnedWordsCount * 100) / user!!.dailyGoalWords
+                    } else if (stats.totalWordsCount > 0) {
                         (stats.learnedWordsCount * 100) / stats.totalWordsCount
                     } else {
-                        85 // Beautiful default mockup percent from requested design
+                        0
                     }
 
                     Column {
@@ -253,7 +255,7 @@ fun GreetingHeader(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "$progressPercent%",
+                            text = "${progressPercent.coerceAtMost(100)}%",
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 32.sp
@@ -271,7 +273,7 @@ fun GreetingHeader(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = user?.englishLevel?.ifBlank { "Level B2" } ?: "Level B2",
+                            text = user?.englishLevel?.label ?: "B2",
                             color = Color.White,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
@@ -284,13 +286,15 @@ fun GreetingHeader(
                 Spacer(modifier = Modifier.height(14.dp))
 
                 // Standard progress indicator line
-                val floatProgress = if (stats.totalWordsCount > 0) {
+                val floatProgress = if (user != null && user!!.dailyGoalWords > 0) {
+                    stats.learnedWordsCount.toFloat() / user!!.dailyGoalWords.toFloat()
+                } else if (stats.totalWordsCount > 0) {
                     stats.learnedWordsCount.toFloat() / stats.totalWordsCount.toFloat()
                 } else {
-                    0.85f // Match default mockup progress
+                    0f
                 }
                 LinearProgressIndicator(
-                    progress = { floatProgress },
+                    progress = { floatProgress.coerceAtMost(1f) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)

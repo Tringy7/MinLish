@@ -10,25 +10,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.domain.model.EnglishLevel
 import com.example.presentation.VocabularyViewModel
-import com.example.presentation.components.GlassTitle
 import com.example.presentation.components.MinLishCard
 import com.example.utils.ReminderManager
 
@@ -44,6 +41,9 @@ fun ProfileScreen(
 
     var dailyNotificationEnabled by rememberSaveable { mutableStateOf(true) }
     var reviewAlarmEnabled by rememberSaveable { mutableStateOf(true) }
+
+    val cefrLevels = EnglishLevel.entries
+    val studyGoals = listOf("IELTS", "TOEIC", "Giao tiếp", "Công việc", "Du học", "Khác")
 
     Scaffold(
         topBar = {
@@ -65,114 +65,69 @@ fun ProfileScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Personal Avatar Card
+            // Avatar Card
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(user?.avatarUrl?.ifBlank { "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256" })
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = "User avatar profile",
+                            .crossfade(true).build(),
+                        contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                        modifier = Modifier.size(100.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                     )
-                    
                     Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Text(
-                        text = user?.name ?: "Hải Đăng",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = user?.email ?: "learner@minlish.com",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Text(text = user?.name ?: "User", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
+                    Text(text = user?.email ?: "email", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            // Target english level config
-            Text(
-                text = "CÀI ĐẶT TRÌNH ĐỘ TIẾNG ANH",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
+            // CEFR Level Section
+            Text(text = "TRÌNH ĐỘ TIẾNG ANH (CEFR)", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
             MinLishCard(modifier = Modifier.fillMaxWidth()) {
-                val levels = listOf(
-                    "A2 - Elementary",
-                    "B1 - Pre-Intermediate",
-                    "B2 - Upper Intermediate",
-                    "C1 - Advanced"
-                )
-
-                levels.forEach { level ->
-                    val isSelected = user?.englishLevel == level
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.updateEnglishLevel(level) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = level,
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            ),
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                        )
-                        if (isSelected) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Active level choice",
-                                tint = MaterialTheme.colorScheme.primary
+                cefrLevels.chunked(3).forEach { rowLevels ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        rowLevels.forEach { level ->
+                            val isSelected = user?.englishLevel == level
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.updateProfile(level, user?.learningGoal ?: "Giao tiếp") },
+                                label = { Text(level.label) },
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
-                    if (level != levels.last()) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                }
+            }
+
+            // Learning Goal Section
+            Text(text = "MỤC TIÊU HỌC TẬP", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+            MinLishCard(modifier = Modifier.fillMaxWidth()) {
+                studyGoals.chunked(2).forEach { rowGoals ->
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        rowGoals.forEach { goal ->
+                            val isSelected = user?.learningGoal == goal
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { viewModel.updateProfile(user?.englishLevel ?: EnglishLevel.B1, goal) },
+                                label = { Text(goal) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
 
-            // Notifications configuration (WorkManager Simulator triggers)
-            Text(
-                text = "THÔNG BÁO NHẮC HỌC (SM-2 ALARM)",
-                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
+            // Notifications
+            Text(text = "CÀI ĐẶT THÔNG BÁO", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
             MinLishCard(modifier = Modifier.fillMaxWidth()) {
-                // Daily notifications switch
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Nhắc học mỗi ngày",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "Dùng WorkManager nhắc bạn ôn tập hàng ngày lúc 20:00.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(text = "Nhắc học mỗi ngày", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                        Text(text = "WorkManager nhắc bạn lúc 20:00.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
                         checked = dailyNotificationEnabled,
@@ -188,28 +143,15 @@ fun ProfileScreen(
                         },
                         modifier = Modifier.testTag("switch_daily_reminder")
                     )
+                    Switch(checked = dailyNotificationEnabled, onCheckedChange = { dailyNotificationEnabled = it })
                 }
-
                 Spacer(modifier = Modifier.height(14.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 Spacer(modifier = Modifier.height(14.dp))
-
-                // Words due alarm switch
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Báo từ vựng đến hạn ôn",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Text(
-                            text = "Báo động định kỳ khi có từ vựng đến thời hạn lặp lại của SM-2.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(text = "Báo từ vựng đến hạn ôn", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                        Text(text = "Thông báo khi có từ đến hạn SM-2.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
                         checked = reviewAlarmEnabled,
@@ -225,21 +167,14 @@ fun ProfileScreen(
                         },
                         modifier = Modifier.testTag("switch_due_reminder")
                     )
+                    Switch(checked = reviewAlarmEnabled, onCheckedChange = { reviewAlarmEnabled = it })
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            // Logout execution
             Button(
-                onClick = {
-                    viewModel.logout()
-                    onLogout()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .testTag("profile_logout_btn"),
+                onClick = { viewModel.logout(); onLogout() },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                 shape = RoundedCornerShape(12.dp)
             ) {

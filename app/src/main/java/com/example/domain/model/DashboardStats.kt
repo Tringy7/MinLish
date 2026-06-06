@@ -8,6 +8,7 @@ data class DashboardStats(
     val retentionRate: Int = 0,
     val dueTodayCount: Int = 0,
     val estimatedLevel: String = "Beginner",
+    val newWordsTodayCount: Int = 0,
     val dailyActivities: List<DailyActivity> = emptyList()
 )
 
