@@ -114,10 +114,9 @@ fun AppNavigation(
                             navController.navigate("vocab_detail/$setId")
                         },
                         onStudyDue = {
-                            // Start general review study loop for all sets combined!
-                            // Using a special code or set 1 check which we prepopulate
-                            viewModel.selectSet(1)
-                            navController.navigate("flashcard/1?dueOnly=true")
+                            // Start general review study loop for ALL due words across all sets!
+                            viewModel.selectSet(-1)
+                            navController.navigate("flashcard/-1?dueOnly=true")
                         },
                         modifier = innerModifier
                     )

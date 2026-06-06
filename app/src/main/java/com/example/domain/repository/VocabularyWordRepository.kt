@@ -11,6 +11,7 @@ interface VocabularyWordRepository {
     fun getDueWordsForSetFlow(setId: Int, timestamp: Long): Flow<List<VocabularyWordEntity>>
     fun getAllDueWordsFlow(timestamp: Long): Flow<List<VocabularyWordEntity>>
     suspend fun getAllDueWords(timestamp: Long): List<VocabularyWordEntity>
+    fun getDueWordsCountFlow(timestamp: Long): Flow<Int>
     fun getTotalWordsCountFlow(): Flow<Int>
     fun getLearnedWordsCountFlow(): Flow<Int>
     suspend fun insertWord(word: VocabularyWordEntity): Int

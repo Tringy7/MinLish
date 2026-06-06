@@ -67,7 +67,12 @@ class VocabularyViewModel(
 
     val wordsInCurrentSet: StateFlow<List<VocabularyWordEntity>> = _currentSetId
         .flatMapLatest { id ->
-            getWordsInSetUseCase(id)
+            if (id == -1) {
+                // Return all words in the system for "Global Study"
+                getDueWordsUseCase() 
+            } else {
+                getWordsInSetUseCase(id)
+            }
         }
         .flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

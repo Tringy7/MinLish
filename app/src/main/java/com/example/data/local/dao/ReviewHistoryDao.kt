@@ -11,6 +11,9 @@ interface ReviewHistoryDao {
     @Query("SELECT * FROM review_history ORDER BY reviewedAt DESC LIMIT :limit")
     fun getRecentHistoryFlow(limit: Int): Flow<List<ReviewHistoryEntity>>
 
+    @Query("SELECT * FROM review_history ORDER BY reviewedAt ASC")
+    fun getAllHistoryFlow(): Flow<List<ReviewHistoryEntity>>
+
     @Query("SELECT COUNT(*) FROM review_history")
     fun getTotalReviewsFlow(): Flow<Int>
 

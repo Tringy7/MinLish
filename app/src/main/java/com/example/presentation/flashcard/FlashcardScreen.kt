@@ -68,7 +68,10 @@ fun FlashcardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Học Flashcard SM-2", fontWeight = FontWeight.Bold) },
+                title = { 
+                    val title = if (setId == -1) "Ôn tập tổng hợp" else "Học Flashcard SM-2"
+                    Text(title, fontWeight = FontWeight.Bold) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.Close, contentDescription = "Đóng")
