@@ -1,6 +1,7 @@
 package com.example.domain.usecase.vocabulary
 
 import com.example.data.local.entity.VocabularySetEntity
+import com.example.domain.model.EnglishLevel
 import com.example.domain.repository.VocabularySetRepository
 
 class ManageVocabularySetUseCase(private val repository: VocabularySetRepository) {
@@ -8,7 +9,7 @@ class ManageVocabularySetUseCase(private val repository: VocabularySetRepository
         name: String, 
         description: String, 
         tags: String, 
-        level: String = "A1", 
+        level: EnglishLevel = EnglishLevel.A1,
         category: String = "General"
     ): Int {
         if (name.isBlank()) return -1

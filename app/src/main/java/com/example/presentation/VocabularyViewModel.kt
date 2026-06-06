@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.di.ServiceLocator
 import com.example.data.local.entity.*
+import com.example.domain.model.EnglishLevel
 import com.example.domain.usecase.auth.*
 import com.example.domain.usecase.home.*
 import com.example.domain.usecase.vocabulary.*
@@ -34,7 +35,7 @@ class VocabularyViewModel(
     private val manageVocabularyWordUseCase: ManageVocabularyWordUseCase,
     private val getDueWordsUseCase: GetDueWordsUseCase,
     private val reviewWordUseCase: ReviewWordUseCase,
-    private val updateEnglishLevelUseCase: UpdateEnglishLevelUseCase,
+    private val updateProfileUseCase: UpdateProfileUseCase,
 ) : ViewModel() {
 
     val userState: StateFlow<UserEntity?> = getUserUseCase.getFlow()
@@ -47,7 +48,7 @@ class VocabularyViewModel(
     val searchQuery = _searchQuery.asStateFlow()
 
     val wordSets: StateFlow<List<VocabularySetEntity>> = _searchQuery
-        .debounce(300) // Tránh search quá dồn dập
+        .debounce(300) 
         .distinctUntilChanged()
         .flatMapLatest { query ->
             getVocabularySetsUseCase(query)
@@ -85,12 +86,8 @@ class VocabularyViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val dashboardStats: StateFlow<DashboardStats> = getDashboardStatsUseCase()
-        .flowOn(Dispatchers.IO) // Chuyển luồng IO cho việc fetch data
+        .flowOn(Dispatchers.IO) 
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
-
-    init {
-        // userState and isUserLoggedIn are reactive now
-    }
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
@@ -98,9 +95,9 @@ class VocabularyViewModel(
         }
     }
 
-    fun signUp(email: String, name: String, password: String) {
+    fun signUp(email: String, name: String, password: String, englishLevel: EnglishLevel, learningGoal: String) {
         viewModelScope.launch {
-            signUpUseCase(email, name, password)
+            signUpUseCase(name, email, password, englishLevel, learningGoal)
         }
     }
 
@@ -142,7 +139,7 @@ class VocabularyViewModel(
         }
     }
 
-    fun addSet(name: String, description: String, tags: String, level: String = "A1", category: String = "General") {
+    fun addSet(name: String, description: String, tags: String, level: EnglishLevel = EnglishLevel.A1, category: String = "General") {
         viewModelScope.launch {
             manageVocabularySetUseCase.addSet(name, description, tags, level, category)
         }
@@ -160,9 +157,9 @@ class VocabularyViewModel(
         }
     }
 
-    fun updateEnglishLevel(level: String) {
+    fun updateProfile(level: EnglishLevel, goal: String) {
         viewModelScope.launch {
-            updateEnglishLevelUseCase(level)
+            updateProfileUseCase(level, goal)
         }
     }
 
@@ -195,7 +192,7 @@ class VocabularyViewModel(
                     manageVocabularyWordUseCase = ManageVocabularyWordUseCase(wordRepo),
                     getDueWordsUseCase = GetDueWordsUseCase(wordRepo),
                     reviewWordUseCase = ReviewWordUseCase(wordRepo, historyRepo, UpdateStreakUseCase(userRepo)),
-                    updateEnglishLevelUseCase = UpdateEnglishLevelUseCase(userRepo)
+                    updateProfileUseCase = UpdateProfileUseCase(userRepo)
                 ) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")

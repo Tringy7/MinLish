@@ -8,10 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,7 +30,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.di.ServiceLocator
+import com.example.domain.model.EnglishLevel
 import com.example.presentation.VocabularyViewModel
 import com.example.presentation.components.MinLishCard
 import kotlinx.coroutines.launch
@@ -41,7 +38,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginRegisterScreen(
-    vocabularyViewModel: VocabularyViewModel, // Used for global session if needed
+    vocabularyViewModel: VocabularyViewModel, 
     onLoginSuccess: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -54,12 +51,15 @@ fun LoginRegisterScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Constants
+    val cefrLevels = EnglishLevel.entries
+    val studyGoals = listOf("IELTS", "TOEIC", "Giao tiếp", "Công việc", "Du học", "Khác")
+
     // --- Google Sign-In Logic ---
     val gso = remember {
         GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
             .requestProfile()
-            // .requestIdToken("YOUR_WEB_CLIENT_ID") // Uncomment and add ID after console setup
             .build()
     }
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
@@ -89,7 +89,8 @@ fun LoginRegisterScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
-    var englishLevel by remember { mutableStateOf("B2 - Upper Intermediate") }
+    var englishLevel by remember { mutableStateOf(EnglishLevel.B1) }
+    var learningGoal by remember { mutableStateOf("Giao tiếp") }
 
     // Navigation and Error handling
     LaunchedEffect(uiState) {
@@ -99,6 +100,72 @@ fun LoginRegisterScreen(
             snackbarHostState.showSnackbar((uiState as LoginUiState.Error).message)
             loginViewModel.resetState()
         }
+    }
+
+    // Setup Dialog for Google First-timers
+    if (uiState is LoginUiState.RequireSetup) {
+        var setupLevel by remember { mutableStateOf(EnglishLevel.B1) }
+        var setupGoal by remember { mutableStateOf("Giao tiếp") }
+
+        AlertDialog(
+            onDismissRequest = { loginViewModel.resetState() },
+            title = { Text("Hoàn thiện hồ sơ") },
+            text = {
+                Column {
+                    Text("Chào mừng! Hãy cho chúng tôi biết trình độ và mục tiêu của bạn.")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    // Level Dropdown
+                    Text("Trình độ hiện tại (CEFR):", style = MaterialTheme.typography.bodySmall)
+                    var levelExp by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(expanded = levelExp, onExpandedChange = { levelExp = it }) {
+                        OutlinedTextField(
+                            value = setupLevel.fullLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = levelExp) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(expanded = levelExp, onDismissRequest = { levelExp = false }) {
+                            cefrLevels.forEach { level ->
+                                DropdownMenuItem(
+                                    text = { Text(level.fullLabel) },
+                                    onClick = { setupLevel = level; levelExp = false }
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Goal Dropdown
+                    Text("Mục tiêu học tập:", style = MaterialTheme.typography.bodySmall)
+                    var goalExp by remember { mutableStateOf(false) }
+                    ExposedDropdownMenuBox(expanded = goalExp, onExpandedChange = { goalExp = it }) {
+                        OutlinedTextField(
+                            value = setupGoal,
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = goalExp) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor()
+                        )
+                        ExposedDropdownMenu(expanded = goalExp, onDismissRequest = { goalExp = false }) {
+                            studyGoals.forEach { goal ->
+                                DropdownMenuItem(
+                                    text = { Text(goal) },
+                                    onClick = { setupGoal = goal; goalExp = false }
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = { loginViewModel.completeSetup(setupLevel, setupGoal) }) {
+                    Text("Bắt đầu ngay")
+                }
+            }
+        )
     }
 
     val gradientBrush = Brush.verticalGradient(
@@ -126,38 +193,18 @@ fun LoginRegisterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // App Branding Logo
+                // Branding
                 Spacer(modifier = Modifier.height(24.dp))
                 Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(MaterialTheme.colorScheme.primary),
+                    modifier = Modifier.size(80.dp).clip(RoundedCornerShape(24.dp)).background(MaterialTheme.colorScheme.primary),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Translate,
-                        contentDescription = "MinLish Logotype",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(44.dp)
-                    )
+                    Icon(imageVector = Icons.Default.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(44.dp))
                 }
                 
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "MinLish",
-                    style = MaterialTheme.typography.headlineLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = (-1).sp
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
-                    text = "Learn Smartly with Spaced Repetition",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
+                Text(text = "MinLish", style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold, letterSpacing = (-1).sp), color = MaterialTheme.colorScheme.primary)
+                Text(text = "Learn Smartly with Spaced Repetition", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -168,103 +215,86 @@ fun LoginRegisterScreen(
                     Text(
                         text = if (isSignUp) "Đăng Ký Tài Khoản" else "Đăng Nhập Hệ Thống",
                         style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
                     if (isSignUp) {
                         OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
+                            value = name, onValueChange = { name = it },
                             label = { Text("Họ và tên") },
                             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                                .testTag("auth_name_input"),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                             shape = RoundedCornerShape(12.dp)
                         )
                     }
 
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = { email = it },
+                        value = email, onValueChange = { email = it },
                         label = { Text("Địa chỉ Email") },
                         leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                            .testTag("auth_email_input"),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                         shape = RoundedCornerShape(12.dp)
                     )
 
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
+                        value = password, onValueChange = { password = it },
                         label = { Text("Mật khẩu") },
                         leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                            .testTag("auth_password_input"),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
                         shape = RoundedCornerShape(12.dp)
                     )
 
                     if (isSignUp) {
                         OutlinedTextField(
-                            value = confirmPassword,
-                            onValueChange = { confirmPassword = it },
+                            value = confirmPassword, onValueChange = { confirmPassword = it },
                             label = { Text("Xác nhận mật khẩu") },
                             leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 12.dp)
-                                .testTag("auth_confirm_password_input"),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                             shape = RoundedCornerShape(12.dp)
                         )
 
-                        Text(
-                            text = "Chọn trình độ sở tại:",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        )
-                        
-                        val levels = listOf("Beginner (A1-A2)", "Intermediate (B1-B2)", "Advanced (C1-C2)")
-                        var expanded by remember { mutableStateOf(false) }
-                        
-                        ExposedDropdownMenuBox(
-                            expanded = expanded,
-                            onExpandedChange = { expanded = it }
-                        ) {
+                        // Level selection
+                        var levelExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = levelExpanded, onExpandedChange = { levelExpanded = it }) {
                             OutlinedTextField(
-                                value = englishLevel,
+                                value = "Trình độ: ${englishLevel.fullLabel}",
                                 onValueChange = {},
                                 readOnly = true,
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor()
-                                    .padding(bottom = 16.dp),
+                                leadingIcon = { Icon(Icons.Default.BarChart, contentDescription = null) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = levelExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor().padding(bottom = 8.dp),
                                 shape = RoundedCornerShape(12.dp)
                             )
-                            ExposedDropdownMenu(
-                                expanded = expanded,
-                                onDismissRequest = { expanded = false }
-                            ) {
-                                levels.forEach { level ->
+                            ExposedDropdownMenu(expanded = levelExpanded, onDismissRequest = { levelExpanded = false }) {
+                                cefrLevels.forEach { level ->
                                     DropdownMenuItem(
-                                        text = { Text(level) },
-                                        onClick = {
-                                            englishLevel = level
-                                            expanded = false
-                                        }
+                                        text = { Text(level.fullLabel) }, 
+                                        onClick = { englishLevel = level; levelExpanded = false }
                                     )
+                                }
+                            }
+                        }
+
+                        // Goal selection
+                        var goalExpanded by remember { mutableStateOf(false) }
+                        ExposedDropdownMenuBox(expanded = goalExpanded, onExpandedChange = { goalExpanded = it }) {
+                            OutlinedTextField(
+                                value = "Mục tiêu: $learningGoal",
+                                onValueChange = {},
+                                readOnly = true,
+                                leadingIcon = { Icon(Icons.Default.Flag, contentDescription = null) },
+                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = goalExpanded) },
+                                modifier = Modifier.fillMaxWidth().menuAnchor().padding(bottom = 16.dp),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            ExposedDropdownMenu(expanded = goalExpanded, onDismissRequest = { goalExpanded = false }) {
+                                studyGoals.forEach { goal ->
+                                    DropdownMenuItem(text = { Text(goal) }, onClick = { learningGoal = goal; goalExpanded = false })
                                 }
                             }
                         }
@@ -277,106 +307,53 @@ fun LoginRegisterScreen(
                                     scope.launch { snackbarHostState.showSnackbar("Mật khẩu xác nhận không khớp") }
                                     return@Button
                                 }
-                                loginViewModel.signUp(email, name, password)
+                                loginViewModel.signUp(email, name, password, englishLevel, learningGoal)
                             } else {
                                 loginViewModel.login(email, password)
                             }
                         },
                         enabled = uiState !is LoginUiState.Loading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .testTag("auth_submit_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
                         if (uiState is LoginUiState.Loading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                strokeWidth = 2.dp
-                            )
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 2.dp)
                         } else {
-                            Text(
-                                text = if (isSignUp) "Tạo Tài Khoản" else "Đăng Nhập",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
+                            Text(text = if (isSignUp) "Tạo Tài Khoản" else "Đăng Nhập", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Divider line for Google Login
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         HorizontalDivider(modifier = Modifier.weight(1f))
-                        Text(
-                            text = " Hoặc đăng nhập bằng ",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Text(text = " Hoặc đăng nhập bằng ", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         HorizontalDivider(modifier = Modifier.weight(1f))
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Google Login Button
                     OutlinedButton(
-                        onClick = {
-                            launcher.launch(googleSignInClient.signInIntent)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp)
-                            .testTag("google_login_button"),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.outlinedButtonColors()
+                        onClick = { launcher.launch(googleSignInClient.signInIntent) },
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            // Display Google color balls inside launcher format
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color(0xFFEA4335)) // red ball
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(18.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFFEA4335)))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Box(
-                                modifier = Modifier
-                                    .size(18.dp)
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color(0xFF4285F4)) // blue ball
-                            )
+                            Box(modifier = Modifier.size(18.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFF4285F4)))
                             Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "Đăng nhập với Google",
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text(text = "Đăng nhập với Google", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Toggle accounts click
                     TextButton(
-                        onClick = { 
-                            isSignUp = !isSignUp 
-                            loginViewModel.resetState()
-                        },
+                        onClick = { isSignUp = !isSignUp; loginViewModel.resetState() },
                         modifier = Modifier.align(Alignment.CenterHorizontally)
                     ) {
-                        Text(
-                            text = if (isSignUp) "Đã có tài khoản? Đăng nhập ngay" 
-                                   else "Chưa có tài khoản? Nhấn đăng ký",
-                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Text(text = if (isSignUp) "Đã có tài khoản? Đăng nhập ngay" else "Chưa có tài khoản? Nhấn đăng ký", color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))

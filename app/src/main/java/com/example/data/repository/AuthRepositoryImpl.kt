@@ -4,6 +4,7 @@ import com.example.data.local.SessionManager
 import com.example.data.local.dao.UserDao
 import com.example.data.local.entity.UserEntity
 import com.example.domain.model.AuthProvider
+import com.example.domain.model.EnglishLevel
 import com.example.domain.repository.AuthRepository
 import com.example.utils.PasswordHasher
 import kotlinx.coroutines.flow.Flow
@@ -45,7 +46,13 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun register(name: String, email: String, password: String): Result<UserEntity> {
+    override suspend fun register(
+        name: String, 
+        email: String, 
+        password: String,
+        englishLevel: EnglishLevel,
+        learningGoal: String
+    ): Result<UserEntity> {
         return try {
             val normalizedEmail = email.trim().lowercase()
             val existingUser = userDao.findByEmail(normalizedEmail)
@@ -57,7 +64,9 @@ class AuthRepositoryImpl(
                 name = name,
                 email = normalizedEmail,
                 passwordHash = PasswordHasher.hashPassword(password),
-                provider = AuthProvider.LOCAL
+                provider = AuthProvider.LOCAL,
+                englishLevel = englishLevel,
+                learningGoal = learningGoal
             )
             val id = userDao.insertUser(newUser)
             if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản"))
@@ -77,7 +86,7 @@ class AuthRepositoryImpl(
             
             if (existingUser != null) {
                 if (existingUser.provider != AuthProvider.GOOGLE) {
-                    return Result.failure(Exception("Tài khoản này đã được đăng ký bằng mật khẩu. Vui lòng đăng nhập bằng Email và Password."))
+                    return Result.failure(Exception("Tài khoản này đã được đăng ký bằng mật khẩu. Vui lòng đăng nhập bằng Email."))
                 }
                 // Login existing Google user
                 val updatedUser = existingUser.copy(
@@ -95,7 +104,9 @@ class AuthRepositoryImpl(
                     email = normalizedEmail,
                     avatarUrl = avatarUrl,
                     provider = AuthProvider.GOOGLE,
-                    passwordHash = null
+                    passwordHash = null,
+                    englishLevel = EnglishLevel.A1, // Initial state, will prompt for setup
+                    learningGoal = ""
                 )
                 val id = userDao.insertUser(newUser)
                 if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản Google"))
@@ -105,7 +116,6 @@ class AuthRepositoryImpl(
                 Result.success(createdUser)
             }
         } catch (e: Exception) {
-            // Log the error or handle it properly
             Result.failure(e)
         }
     }

@@ -273,7 +273,7 @@ fun GreetingHeader(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = user?.englishLevel?.ifBlank { "Level B2" } ?: "Level B2",
+                            text = user?.englishLevel?.label ?: "B2",
                             color = Color.White,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
