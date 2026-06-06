@@ -4,7 +4,9 @@ import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.domain.model.EnglishLevel
 import com.example.domain.usecase.auth.*
+import com.example.domain.usecase.profile.UpdateProfileUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,7 +15,8 @@ import kotlinx.coroutines.launch
 class LoginViewModel(
     private val loginUseCase: LoginUseCase,
     private val signUpUseCase: SignUpUseCase,
-    private val googleSignInUseCase: GoogleSignInUseCase
+    private val googleSignInUseCase: GoogleSignInUseCase,
+    private val updateProfileUseCase: UpdateProfileUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
@@ -40,7 +43,7 @@ class LoginViewModel(
         }
     }
 
-    fun signUp(email: String, name: String, password: String) {
+    fun signUp(email: String, name: String, password: String, englishLevel: EnglishLevel, learningGoal: String) {
         if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             _uiState.value = LoginUiState.Error("Email không đúng định dạng")
             return
@@ -56,7 +59,7 @@ class LoginViewModel(
 
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
-            val result = signUpUseCase(name, email, password)
+            val result = signUpUseCase(name, email, password, englishLevel, learningGoal)
             if (result.isSuccess) {
                 _uiState.value = LoginUiState.Success
             } else {
@@ -69,11 +72,24 @@ class LoginViewModel(
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
             val result = googleSignInUseCase(email, displayName, avatarUrl)
-            if (result.isSuccess) {
-                _uiState.value = LoginUiState.Success
-            } else {
-                _uiState.value = LoginUiState.Error(result.exceptionOrNull()?.message ?: "Google Sign-In thất bại")
+            result.onSuccess { user ->
+                // If it's a new user or missing goal, require setup
+                if (user.learningGoal.isBlank()) {
+                    _uiState.value = LoginUiState.RequireSetup(user)
+                } else {
+                    _uiState.value = LoginUiState.Success
+                }
+            }.onFailure {
+                _uiState.value = LoginUiState.Error(it.message ?: "Google Sign-In thất bại")
             }
+        }
+    }
+
+    fun completeSetup(englishLevel: EnglishLevel, learningGoal: String) {
+        viewModelScope.launch {
+            _uiState.value = LoginUiState.Loading
+            updateProfileUseCase(englishLevel, learningGoal)
+            _uiState.value = LoginUiState.Success
         }
     }
 
@@ -85,10 +101,12 @@ class LoginViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             val authRepo = com.example.di.ServiceLocator.provideAuthRepository(context)
+            val userRepo = com.example.di.ServiceLocator.provideUserRepository(context)
             return LoginViewModel(
                 loginUseCase = LoginUseCase(authRepo),
                 signUpUseCase = SignUpUseCase(authRepo),
-                googleSignInUseCase = GoogleSignInUseCase(authRepo)
+                googleSignInUseCase = GoogleSignInUseCase(authRepo),
+                updateProfileUseCase = UpdateProfileUseCase(userRepo)
             ) as T
         }
     }
