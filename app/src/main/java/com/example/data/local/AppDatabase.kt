@@ -38,7 +38,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "minlish_database"
                 )
-                 .createFromAsset("database/minlish_seed.db") // Commented out to fix "database (closed)" error as asset file is missing
+                // .createFromAsset("database/minlish_seed.db") // REMOVED: This was causing the database to reset every run due to missing asset file and fallbackToDestructiveMigration
                 .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
                 .fallbackToDestructiveMigration()
                 .build()
