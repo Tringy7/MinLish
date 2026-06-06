@@ -163,11 +163,14 @@ class VocabularyViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(VocabularyViewModel::class.java)) {
-                // Sử dụng lazy delegation để không khởi tạo repository ngay lập tức trên Main Thread
-                val userRepo by lazy { ServiceLocator.provideUserRepository(context) }
-                val setRepo by lazy { ServiceLocator.provideVocabularySetRepository(context) }
-                val wordRepo by lazy { ServiceLocator.provideVocabularyWordRepository(context) }
-                val historyRepo by lazy { ServiceLocator.provideReviewHistoryRepository(context) }
+                // Initialize repositories and UseCases
+                // We access the repositories here, which triggers ServiceLocator. 
+                // To avoid blocking the main thread significantly, we ensure singletons are pre-warmed if possible.
+                val appContext = context.applicationContext
+                val userRepo = ServiceLocator.provideUserRepository(appContext)
+                val setRepo = ServiceLocator.provideVocabularySetRepository(appContext)
+                val wordRepo = ServiceLocator.provideVocabularyWordRepository(appContext)
+                val historyRepo = ServiceLocator.provideReviewHistoryRepository(appContext)
                 
                 return VocabularyViewModel(
                     getUserUseCase = GetUserUseCase(userRepo),
