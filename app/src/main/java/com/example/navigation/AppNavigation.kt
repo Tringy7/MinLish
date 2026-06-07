@@ -49,7 +49,7 @@ fun AppNavigation(
             startDestination = if (isLoggedIn == true) "main" else "auth",
             modifier = modifier.fillMaxSize()
         ) {
-            
+
             // --- Authentication Gate ---
             composable("auth") {
                 LoginRegisterScreen(
@@ -65,45 +65,46 @@ fun AppNavigation(
             // --- Core Application Lobby ---
             composable("main") {
                 var selectedTab by rememberSaveable { mutableStateOf(0) }
-                
+
                 Scaffold(
                     bottomBar = {
                         NavigationBar(modifier = Modifier.testTag("app_bottom_bar")) {
                             NavigationBarItem(
                                 selected = selectedTab == 0,
                                 onClick = { selectedTab = 0 },
-                                icon = { 
+                                icon = {
                                     Icon(
                                         imageVector = if (selectedTab == 0) Icons.Filled.Home else Icons.Outlined.Home,
                                         contentDescription = null
-                                    ) 
+                                    )
                                 },
                                 label = { Text("Bộ từ") }
                             )
                             NavigationBarItem(
                                 selected = selectedTab == 1,
                                 onClick = { selectedTab = 1 },
-                                icon = { 
+                                icon = {
                                     Icon(
                                         imageVector = if (selectedTab == 1) Icons.Filled.BarChart else Icons.Outlined.BarChart,
                                         contentDescription = null
-                                    ) 
+                                    )
                                 },
                                 label = { Text("Tiến trình") }
                             )
                             NavigationBarItem(
                                 selected = selectedTab == 2,
                                 onClick = { selectedTab = 2 },
-                                icon = { 
+                                icon = {
                                     Icon(
                                         imageVector = if (selectedTab == 2) Icons.Filled.AccountCircle else Icons.Outlined.AccountCircle,
                                         contentDescription = null
-                                    ) 
+                                    )
                                 },
                                 label = { Text("Hồ sơ") }
                             )
                         }
                     }
+
                 ) { paddingValues ->
                     val innerModifier = Modifier.padding(paddingValues)
                     when (selectedTab) {
@@ -119,6 +120,7 @@ fun AppNavigation(
                             },
                             modifier = innerModifier
                         )
+
                         1 -> DashboardScreen(viewModel = viewModel, modifier = innerModifier)
                         2 -> ProfileScreen(
                             viewModel = viewModel,
@@ -132,38 +134,7 @@ fun AppNavigation(
                         )
                     }
                 }
-            ) { paddingValues ->
-                val innerModifier = Modifier.padding(paddingValues)
-                when (selectedTab) {
-                    0 -> HomeScreen(
-                        viewModel = viewModel,
-                        onSetSelected = { setId ->
-                            viewModel.selectSet(setId)
-                            navController.navigate("vocab_detail/$setId")
-                        },
-                        onStudyDue = {
-                            // Start general review study loop for ALL due words across all sets!
-                            viewModel.selectSet(-1)
-                            navController.navigate("flashcard/-1?dueOnly=true")
-                        },
-                        modifier = innerModifier
-                    )
-                    1 -> DashboardScreen(
-                        viewModel = viewModel,
-                        modifier = innerModifier
-                    )
-                    2 -> ProfileScreen(
-                        viewModel = viewModel,
-                        onLogout = {
-                            navController.navigate("auth") {
-                                popUpTo("main") { inclusive = true }
-                            }
-                        },
-                        modifier = innerModifier
-                    )
-                }
             }
-
             composable(
                 route = "vocab_detail/{setId}",
                 arguments = listOf(navArgument("setId") { type = NavType.IntType })
@@ -177,17 +148,22 @@ fun AppNavigation(
                     onStartStudy = { sid, dueOnly -> navController.navigate("flashcard/$sid?dueOnly=$dueOnly") }
                 )
             }
-
             composable(
                 route = "add_edit_word/{setId}?wordId={wordId}",
                 arguments = listOf(
                     navArgument("setId") { type = NavType.IntType },
-                    navArgument("wordId") { type = NavType.StringType; nullable = true; defaultValue = null }
+                    navArgument("wordId") {
+                        type = NavType.StringType; nullable = true; defaultValue = null
+                    }
                 )
             ) { backStackEntry ->
                 val setId = backStackEntry.arguments?.getInt("setId") ?: 1
                 val wordId = backStackEntry.arguments?.getString("wordId")?.toIntOrNull()
-                AddEditWordScreen(viewModel = viewModel, setId = setId, wordId = wordId, onBack = { navController.popBackStack() })
+                AddEditWordScreen(
+                    viewModel = viewModel,
+                    setId = setId,
+                    wordId = wordId,
+                    onBack = { navController.popBackStack() })
             }
 
             composable(
@@ -199,12 +175,15 @@ fun AppNavigation(
             ) { backStackEntry ->
                 val setId = backStackEntry.arguments?.getInt("setId") ?: 1
                 val dueOnly = backStackEntry.arguments?.getBoolean("dueOnly") ?: false
-                FlashcardScreen(viewModel = viewModel, setId = setId, dueOnly = dueOnly, onBack = { navController.popBackStack() })
+                FlashcardScreen(
+                    viewModel = viewModel,
+                    setId = setId,
+                    dueOnly = dueOnly,
+                    onBack = { navController.popBackStack() })
             }
         }
     }
 }
-
 @Composable
 fun SplashScreen() {
     Box(
