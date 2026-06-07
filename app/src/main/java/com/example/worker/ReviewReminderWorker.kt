@@ -14,11 +14,11 @@ class ReviewReminderWorker(
     override suspend fun doWork(): Result {
         val wordRepo = ServiceLocator.provideVocabularyWordRepository(applicationContext)
         val dueWordsCount = wordRepo.getAllDueWords(System.currentTimeMillis()).size
-        
+
         if (dueWordsCount > 0) {
             NotificationHelper.showReviewReminder(applicationContext, dueWordsCount)
         }
-        
+
         return Result.success()
     }
 }

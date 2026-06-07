@@ -32,8 +32,13 @@ class VocabularySetRepositoryImpl(
     }
 
     override suspend fun insertSet(set: VocabularySetEntity): Int {
-        val userId = sessionManager.currentUserId.first() ?: return -1
-        return vocabularySetDao.insertSet(set.copy(userId = userId)).toInt()
+        if (set.isSystem) {
+            val result = vocabularySetDao.insertSet(set).toInt()
+            return if (result == -1) set.id else result
+        }
+        val userId = sessionManager.currentUserId.first()
+        val result = vocabularySetDao.insertSet(set.copy(userId = userId)).toInt()
+        return if (result == -1 && set.id != 0) set.id else result
     }
 
     override suspend fun updateSet(set: VocabularySetEntity) = vocabularySetDao.updateSet(set)

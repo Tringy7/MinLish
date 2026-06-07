@@ -13,8 +13,8 @@ object ReminderManager {
 
     fun scheduleDailyReminder(context: Context) {
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 15)
-            set(Calendar.MINUTE, 8)
+            set(Calendar.HOUR_OF_DAY, 18)
+            set(Calendar.MINUTE, 24)
             set(Calendar.SECOND, 0)
         }
 
@@ -41,14 +41,13 @@ object ReminderManager {
     }
 
     fun scheduleReviewReminder(context: Context) {
-        // Kiểm tra từ hạn ôn mỗi 4 tiếng
         val reviewRequest = PeriodicWorkRequestBuilder<ReviewReminderWorker>(4, TimeUnit.HOURS)
+//            .setInitialDelay(1, TimeUnit.MINUTES)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
                     .build()
             )
-//            .setInitialDelay(1, TimeUnit.MINUTES)
             .addTag(REVIEW_WORK_NAME)
             .build()
 

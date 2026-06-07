@@ -143,11 +143,9 @@ fun ProfileScreen(
                         },
                         modifier = Modifier.testTag("switch_daily_reminder")
                     )
-                    Switch(checked = dailyNotificationEnabled, onCheckedChange = { dailyNotificationEnabled = it })
                 }
                 Spacer(modifier = Modifier.height(14.dp))
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(14.dp))
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = "Báo từ vựng đến hạn ôn", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
@@ -167,10 +165,8 @@ fun ProfileScreen(
                         },
                         modifier = Modifier.testTag("switch_due_reminder")
                     )
-                    Switch(checked = reviewAlarmEnabled, onCheckedChange = { reviewAlarmEnabled = it })
                 }
             }
-
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = { viewModel.logout(); onLogout() },

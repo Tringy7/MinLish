@@ -15,29 +15,28 @@ import com.example.presentation.VocabularyViewModel
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
-  override fun onCreate(savedInstanceState: Bundle?) {
-    super.onCreate(savedInstanceState)
-    enableEdgeToEdge()
-    
-    // Initialize the shared ViewModel with local dependency Injection
-    val viewModel = ViewModelProvider(
-        this, 
-        VocabularyViewModel.Factory(applicationContext),
-    )[VocabularyViewModel::class.java]
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
 
-    setContent {
-      MyApplicationTheme {
-        AppNavigation(viewModel = viewModel)
-      }
+        // Initialize the shared ViewModel with local dependency Injection
+        val viewModel = ViewModelProvider(
+            this,
+            VocabularyViewModel.Factory(applicationContext),
+        )[VocabularyViewModel::class.java]
+
+        setContent {
+            MyApplicationTheme {
+                AppNavigation(viewModel = viewModel)
+            }
+        }
     }
-  }
 }
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
-  Text(
-    text = "Hello $name!",
-    modifier = modifier
-  )
+    Text(
+        text = "Hello $name!",
+        modifier = modifier
+    )
 }
-

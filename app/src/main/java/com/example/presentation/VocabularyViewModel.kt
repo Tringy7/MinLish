@@ -194,19 +194,11 @@ class VocabularyViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(VocabularyViewModel::class.java)) {
-                // Initialize repositories and UseCases
-                // We access the repositories here, which triggers ServiceLocator. 
-                // To avoid blocking the main thread significantly, we ensure singletons are pre-warmed if possible.
-                val appContext = context.applicationContext
-                val userRepo = ServiceLocator.provideUserRepository(appContext)
-                val setRepo = ServiceLocator.provideVocabularySetRepository(appContext)
-                val wordRepo = ServiceLocator.provideVocabularyWordRepository(appContext)
-                val historyRepo = ServiceLocator.provideReviewHistoryRepository(appContext)
-                val authRepo by lazy { ServiceLocator.provideAuthRepository(context) }
-                val userRepo by lazy { ServiceLocator.provideUserRepository(context) }
-                val setRepo by lazy { ServiceLocator.provideVocabularySetRepository(context) }
-                val wordRepo by lazy { ServiceLocator.provideVocabularyWordRepository(context) }
-                val historyRepo by lazy { ServiceLocator.provideReviewHistoryRepository(context) }
+                val authRepo = ServiceLocator.provideAuthRepository(context)
+                val userRepo = ServiceLocator.provideUserRepository(context)
+                val setRepo = ServiceLocator.provideVocabularySetRepository(context)
+                val wordRepo = ServiceLocator.provideVocabularyWordRepository(context)
+                val historyRepo = ServiceLocator.provideReviewHistoryRepository(context)
                 
                 return VocabularyViewModel(
                     getUserUseCase = GetUserUseCase(authRepo),
@@ -223,7 +215,7 @@ class VocabularyViewModel(
                     reviewWordUseCase = ReviewWordUseCase(wordRepo, historyRepo, UpdateStreakUseCase(userRepo)),
                     updateEnglishLevelUseCase = UpdateEnglishLevelUseCase(userRepo),
                     exportWordsUseCase = ExportWordsUseCase(wordRepo),
-                    importWordsUseCase = ImportWordsUseCase(wordRepo)
+                    importWordsUseCase = ImportWordsUseCase(wordRepo),
                     updateProfileUseCase = UpdateProfileUseCase(userRepo)
                 ) as T
             }
