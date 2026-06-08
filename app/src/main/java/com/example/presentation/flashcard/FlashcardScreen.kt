@@ -199,8 +199,8 @@ fun FlashcardScreen(
 
                                 TextButton(
                                     onClick = {
-                                        // Marking as Learned = Rating 4 (Easy) in SM-2 logic
-                                        viewModel.reviewWordResponse(currentWord, 4)
+                                        // Marking as Learned = Rating 5 (Easy) in SM-2 logic
+                                        viewModel.reviewWordResponse(currentWord, 5)
                                         reviewsLoggedCount++
                                         advanceSession(
                                             size = studySessionCards.size,
@@ -221,7 +221,7 @@ fun FlashcardScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // Again Button (Red) - quality 1
+                                // Again Button (Red) - quality 0
                                 ReviewButton(
                                     text = "Lại (Again)",
                                     subtitle = "Quên",
@@ -229,7 +229,7 @@ fun FlashcardScreen(
                                     containerColor = Color(0xFFFFEBEE),
                                     contentColor = Color(0xFFC62828),
                                     onClick = {
-                                        viewModel.reviewWordResponse(currentWord, 1)
+                                        viewModel.reviewWordResponse(currentWord, 0)
                                         reviewsLoggedCount++
                                         advanceSession(
                                             size = studySessionCards.size,
@@ -240,32 +240,13 @@ fun FlashcardScreen(
                                     }
                                 )
 
-                                // Hard Button (Orange) - quality 2
+                                // Hard Button (Orange) - quality 3
                                 ReviewButton(
                                     text = "Khó (Hard)",
                                     subtitle = "Lờ mờ",
                                     modifier = Modifier.weight(1f).testTag("rating_hard_btn"),
                                     containerColor = Color(0xFFFFF3E0),
                                     contentColor = Color(0xFFE65100),
-                                    onClick = {
-                                        viewModel.reviewWordResponse(currentWord, 2)
-                                        reviewsLoggedCount++
-                                        advanceSession(
-                                            size = studySessionCards.size,
-                                            currentIndex = currentIndex,
-                                            onIncrement = { currentIndex = it },
-                                            onFinish = { isSessionFinished = true }
-                                        )
-                                    }
-                                )
-
-                                // Good Button (Blue) - quality 3
-                                ReviewButton(
-                                    text = "Tốt (Good)",
-                                    subtitle = "Nhớ kịp",
-                                    modifier = Modifier.weight(1f).testTag("rating_good_btn"),
-                                    containerColor = Color(0xFFE3F2FD),
-                                    contentColor = Color(0xFF1565C0),
                                     onClick = {
                                         viewModel.reviewWordResponse(currentWord, 3)
                                         reviewsLoggedCount++
@@ -278,7 +259,26 @@ fun FlashcardScreen(
                                     }
                                 )
 
-                                // Easy Button (Green) - quality 4
+                                // Good Button (Blue) - quality 4
+                                ReviewButton(
+                                    text = "Tốt (Good)",
+                                    subtitle = "Nhớ kịp",
+                                    modifier = Modifier.weight(1f).testTag("rating_good_btn"),
+                                    containerColor = Color(0xFFE3F2FD),
+                                    contentColor = Color(0xFF1565C0),
+                                    onClick = {
+                                        viewModel.reviewWordResponse(currentWord, 4)
+                                        reviewsLoggedCount++
+                                        advanceSession(
+                                            size = studySessionCards.size,
+                                            currentIndex = currentIndex,
+                                            onIncrement = { currentIndex = it },
+                                            onFinish = { isSessionFinished = true }
+                                        )
+                                    }
+                                )
+
+                                // Easy Button (Green) - quality 5
                                 ReviewButton(
                                     text = "Dễ (Easy)",
                                     subtitle = "Nhớ ngay",
@@ -286,7 +286,7 @@ fun FlashcardScreen(
                                     containerColor = Color(0xFFE8F5E9),
                                     contentColor = Color(0xFF2E7D32),
                                     onClick = {
-                                        viewModel.reviewWordResponse(currentWord, 4)
+                                        viewModel.reviewWordResponse(currentWord, 5)
                                         reviewsLoggedCount++
                                         advanceSession(
                                             size = studySessionCards.size,

@@ -30,7 +30,8 @@ class ReviewWordUseCase(
             intervalDays = sm2Result.intervalDays,
             easeFactor = sm2Result.easeFactor,
             nextReviewTimestamp = sm2Result.nextReviewTimestamp,
-            lastReviewedTimestamp = System.currentTimeMillis()
+            lastReviewedTimestamp = System.currentTimeMillis(),
+            lastQuality = rating
         )
 
         // Persistence operations

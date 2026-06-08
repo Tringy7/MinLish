@@ -81,7 +81,8 @@ fun HomeScreen(
                 GreetingHeader(
                     user = user,
                     stats = stats,
-                    onStudyDue = onStudyDue
+                    onStudyDue = onStudyDue,
+                    onCreateSet = { showAddSetDialog = true }
                 )
             }
 
@@ -203,14 +204,15 @@ fun HomeScreen(
 fun GreetingHeader(
     user: UserEntity?,
     stats: DashboardStats,
-    onStudyDue: () -> Unit
+    onStudyDue: () -> Unit,
+    onCreateSet: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)
     ) {
-        // --- 1. Top profile bar (Chào buổi sáng, MinLish) ---
+        // --- 1. Top profile bar ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -228,7 +230,7 @@ fun GreetingHeader(
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "MinLish",
+                    text = user?.name ?: "MinLish",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.Black,
                         fontSize = 26.sp,
@@ -238,7 +240,6 @@ fun GreetingHeader(
                 )
             }
 
-            // User Avatar Profile Disc
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(user?.avatarUrl?.ifBlank { "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256" })
@@ -253,13 +254,70 @@ fun GreetingHeader(
             )
         }
 
-        // --- 2. Compact Sleek Progress Container ---
+        // --- 2. Action Buttons (Create & Practice) ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // Create Set Button
+            Card(
+                onClick = onCreateSet,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(80.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Default.AddCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Tạo bộ từ",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
+            }
+
+            // Practice Button
+            Card(
+                onClick = onStudyDue,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(80.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(Icons.Default.School, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Luyện tập",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
+            }
+        }
+
+        // --- 3. Dashboard Stats ---
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(bottom = 16.dp),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(
@@ -267,29 +325,19 @@ fun GreetingHeader(
                     .fillMaxWidth()
                     .padding(20.dp)
             ) {
-                // Today's Progress & level Badge
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
-                    val progressPercent = if (user != null && user!!.dailyGoalWords > 0) {
-                        (stats.learnedWordsCount * 100) / user!!.dailyGoalWords
-                    } else if (stats.totalWordsCount > 0) {
-                        (stats.learnedWordsCount * 100) / stats.totalWordsCount
-                    } else {
-                        0
-                    }
-
                     Column {
                         Text(
-                            text = "Tiến độ hôm nay",
+                            text = "Tỷ lệ ghi nhớ",
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                         )
-                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "${progressPercent.coerceAtMost(100)}%",
+                            text = "${stats.retentionRate}%",
                             style = MaterialTheme.typography.headlineLarge.copy(
                                 fontWeight = FontWeight.Black,
                                 fontSize = 32.sp
@@ -307,7 +355,7 @@ fun GreetingHeader(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = user?.englishLevel?.label ?: "B2",
+                            text = stats.estimatedLevel,
                             color = Color.White,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Bold,
@@ -319,16 +367,8 @@ fun GreetingHeader(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Standard progress indicator line
-                val floatProgress = if (user != null && user!!.dailyGoalWords > 0) {
-                    stats.learnedWordsCount.toFloat() / user!!.dailyGoalWords.toFloat()
-                } else if (stats.totalWordsCount > 0) {
-                    stats.learnedWordsCount.toFloat() / stats.totalWordsCount.toFloat()
-                } else {
-                    0f
-                }
                 LinearProgressIndicator(
-                    progress = { floatProgress.coerceAtMost(1f) },
+                    progress = { (stats.retentionRate.toFloat() / 100f).coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
@@ -339,114 +379,40 @@ fun GreetingHeader(
 
                 Spacer(modifier = Modifier.height(18.dp))
 
-                // Standard 3 columns Grid cards
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Cell 1: Chuỗi
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(Color.White.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "CHUỖI",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${stats.currentStreak}",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-
-                    // Cell 2: Cần ôn (using B3261E accent)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(Color.White.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "CẦN ÔN",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${stats.dueTodayCount}",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                                color = if (stats.dueTodayCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
-
-                    // Cell 3: Đã học
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .background(Color.White.copy(alpha = 0.45f), RoundedCornerShape(16.dp))
-                            .padding(vertical = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = "ĐÃ HỌC",
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "${stats.learnedWordsCount}",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
-                        }
-                    }
+                    StatBox(label = "QUÊN", value = "${stats.quenCount}", modifier = Modifier.weight(1f), isError = stats.quenCount > 0)
+                    StatBox(label = "LỜ MỜ", value = "${stats.loMoCount}", modifier = Modifier.weight(1f))
+                    StatBox(label = "NHỚ KỊP", value = "${stats.nhoKipCount}", modifier = Modifier.weight(1f))
+                    StatBox(label = "NHỚ NGAY", value = "${stats.nhoNgayCount}", modifier = Modifier.weight(1f))
                 }
             }
         }
+    }
+}
 
-        // --- 3. Large high touch target "⚡ HỌC NGAY BÂY GIỜ" CTA Row ---
-        Button(
-            onClick = onStudyDue,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .testTag("study_now_btn"),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = Color.White
-            ),
-            shape = RoundedCornerShape(100.dp),
-            contentPadding = PaddingValues()
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "⚡",
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(end = 6.dp)
-                )
-                Text(
-                    text = "HỌC NGAY BÂY GIỜ",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.5.sp
-                    )
-                )
-            }
+@Composable
+fun StatBox(label: String, value: String, modifier: Modifier = Modifier, isError: Boolean = false) {
+    Box(
+        modifier = modifier
+            .background(Color.White.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+            .padding(vertical = 10.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 9.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Black),
+                color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }

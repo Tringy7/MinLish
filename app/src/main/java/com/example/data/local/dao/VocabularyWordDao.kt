@@ -39,6 +39,36 @@ interface VocabularyWordDao {
     @Query("SELECT COUNT(*) FROM vocabulary_words WHERE lastReviewedTimestamp > 0")
     fun getLearnedWordsCountFlow(): Flow<Int>
 
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE repetitions > 5")
+    fun getMasteredWordsCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE repetitions > 0 AND repetitions <= 5")
+    fun getLearningWordsCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE lastQuality IN (0, 1)")
+    fun getQuenCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE lastQuality IN (2, 3)")
+    fun getLoMoCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE lastQuality = 4")
+    fun getNhoKipCountFlow(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM vocabulary_words WHERE lastQuality = 5")
+    fun getNhoNgayCountFlow(): Flow<Int>
+
+    @Query("SELECT * FROM vocabulary_words WHERE lastQuality IN (0, 1)")
+    fun getQuenWordsFlow(): Flow<List<VocabularyWordEntity>>
+
+    @Query("SELECT * FROM vocabulary_words WHERE lastQuality IN (2, 3)")
+    fun getLoMoWordsFlow(): Flow<List<VocabularyWordEntity>>
+
+    @Query("SELECT * FROM vocabulary_words WHERE lastQuality = 4")
+    fun getNhoKipWordsFlow(): Flow<List<VocabularyWordEntity>>
+
+    @Query("SELECT * FROM vocabulary_words WHERE lastQuality = 5")
+    fun getNhoNgayWordsFlow(): Flow<List<VocabularyWordEntity>>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertWord(word: VocabularyWordEntity): Long
 

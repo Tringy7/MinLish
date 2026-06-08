@@ -66,13 +66,6 @@ class VocabularyViewModel(
         ttsHelper = null
     }
 
-    val wordSets: StateFlow<List<VocabularySetEntity>> = _searchQuery
-        .debounce(300) 
-        .distinctUntilChanged()
-        .flatMapLatest { query ->
-            getVocabularySetsUseCase(query)
-        }
-        .flowOn(Dispatchers.IO)
     private val _selectedCategory = MutableStateFlow("Tất cả")
     val selectedCategory = _selectedCategory.asStateFlow()
 

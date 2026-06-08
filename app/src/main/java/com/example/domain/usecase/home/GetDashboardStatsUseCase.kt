@@ -28,8 +28,25 @@ class GetDashboardStatsUseCase(
             wordRepository.getTotalWordsCountFlow(),
             wordRepository.getLearnedWordsCountFlow(),
             wordRepository.getDueWordsCountFlow(now),
+            wordRepository.getMasteredWordsCountFlow(),
+            wordRepository.getLearningWordsCountFlow(),
+            wordRepository.getQuenCountFlow(),
+            wordRepository.getLoMoCountFlow(),
+            wordRepository.getNhoKipCountFlow(),
+            wordRepository.getNhoNgayCountFlow(),
             historyRepository.getRecentHistoryFlow(100)
-        ) { user, totalWords, learnedWords, dueCount, history ->
+        ) { args ->
+            val user = args[0] as com.example.data.local.entity.UserEntity?
+            val totalWords = args[1] as Int
+            val learnedWords = args[2] as Int
+            val dueCount = args[3] as Int
+            val masteredCount = args[4] as Int
+            val learningCount = args[5] as Int
+            val quenCount = args[6] as Int
+            val loMoCount = args[7] as Int
+            val nhoKipCount = args[8] as Int
+            val nhoNgayCount = args[9] as Int
+            val history = args[10] as List<ReviewHistoryEntity>
 
             DashboardStats(
                 totalWordsCount = totalWords,
@@ -38,6 +55,12 @@ class GetDashboardStatsUseCase(
                 accuracy = calculateAccuracy(history),
                 retentionRate = calculateRetention(history),
                 dueTodayCount = dueCount,
+                masteredWordsCount = masteredCount,
+                learningWordsCount = learningCount,
+                quenCount = quenCount,
+                loMoCount = loMoCount,
+                nhoKipCount = nhoKipCount,
+                nhoNgayCount = nhoNgayCount,
                 estimatedLevel = estimateLevel(learnedWords),
                 newWordsTodayCount = totalWords - learnedWords,
                 dailyActivities = generateDailyActivities(history, now)

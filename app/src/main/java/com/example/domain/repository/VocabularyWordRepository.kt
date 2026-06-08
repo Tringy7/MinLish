@@ -14,6 +14,16 @@ interface VocabularyWordRepository {
     fun getDueWordsCountFlow(timestamp: Long): Flow<Int>
     fun getTotalWordsCountFlow(): Flow<Int>
     fun getLearnedWordsCountFlow(): Flow<Int>
+    fun getMasteredWordsCountFlow(): Flow<Int>
+    fun getLearningWordsCountFlow(): Flow<Int>
+    fun getQuenCountFlow(): Flow<Int>
+    fun getLoMoCountFlow(): Flow<Int>
+    fun getNhoKipCountFlow(): Flow<Int>
+    fun getNhoNgayCountFlow(): Flow<Int>
+    fun getQuenWordsFlow(): Flow<List<VocabularyWordEntity>>
+    fun getLoMoWordsFlow(): Flow<List<VocabularyWordEntity>>
+    fun getNhoKipWordsFlow(): Flow<List<VocabularyWordEntity>>
+    fun getNhoNgayWordsFlow(): Flow<List<VocabularyWordEntity>>
     suspend fun insertWord(word: VocabularyWordEntity): Int
     suspend fun insertWords(words: List<VocabularyWordEntity>)
     suspend fun updateWord(word: VocabularyWordEntity)

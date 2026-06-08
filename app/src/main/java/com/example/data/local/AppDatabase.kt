@@ -18,7 +18,7 @@ import com.example.data.local.entity.*
         VocabularyWordEntity::class,
         ReviewHistoryEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -38,11 +38,11 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "minlish_database"
+                    "minlish.db"
                 )
-                .setJournalMode(RoomDatabase.JournalMode.WRITE_AHEAD_LOGGING)
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(true)
                 .fallbackToDestructiveMigrationOnDowngrade()
+                .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
                 .also { INSTANCE = it }
             }

@@ -39,5 +39,6 @@ data class VocabularyWordEntity(
     val intervalDays: Int = 0,
     val easeFactor: Double = 2.5,
     val nextReviewTimestamp: Long = System.currentTimeMillis(),
-    val lastReviewedTimestamp: Long = 0L
+    val lastReviewedTimestamp: Long = 0L,
+    val lastQuality: Int = -1 // 0=Quên, 1=Lờ mờ, 2=Nhớ kịp, 3=Nhớ ngay
 )
