@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +46,8 @@ fun HomeScreen(
     val user by viewModel.userState.collectAsStateWithLifecycle()
     val wordSets by viewModel.wordSets.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val categories by viewModel.categories.collectAsStateWithLifecycle()
+    val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
     val allDueWords by viewModel.allDueWords.collectAsStateWithLifecycle()
     val stats by viewModel.dashboardStats.collectAsStateWithLifecycle()
 
@@ -64,85 +67,116 @@ fun HomeScreen(
             )
         }
     ) { innerPadding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            // Header Profile Greeting
-            GreetingHeader(
-                user = user,
-                stats = stats,
-                onStudyDue = onStudyDue
+                .background(MaterialTheme.colorScheme.background),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding() + 88.dp
             )
-
-            // Search and Statistics Area
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { viewModel.updateSearchQuery(it) },
-                    placeholder = { Text("Tìm kiếm bộ từ hoặc tag...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp)
-                        .testTag("set_search_input"),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                    ),
-                    singleLine = true
-                )
-
-                Text(
-                    text = "BỘ TỪ VỰNG CỦA BẠN",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    ),
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 8.dp, bottom = 12.dp)
+        ) {
+            // 1. Header Section
+            item {
+                GreetingHeader(
+                    user = user,
+                    stats = stats,
+                    onStudyDue = onStudyDue
                 )
             }
 
-            // Word Sets List
-            if (wordSets.isEmpty()) {
-                val description = if (searchQuery.isNotBlank()) {
-                    "Không tìm thấy bộ từ nào khớp với từ khóa \"$searchQuery\"."
-                } else {
-                    "Hãy tạo bộ từ tiếng Anh đầu tiên của bạn để bứt phá từ vựng!"
-                }
-                EmptyPlaceholder(
-                    icon = Icons.Default.LibraryBooks,
-                    title = if (searchQuery.isNotBlank()) "Không tìm thấy" else "Chưa có bộ từ vựng",
-                    description = description,
-                    modifier = Modifier.weight(1f),
-                    actionButton = if (searchQuery.isBlank()) {
-                        {
-                            Button(onClick = { showAddSetDialog = true }) {
-                                Text("Khởi tạo bộ từ")
+            // 2. Search & Filter Section
+            item {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        placeholder = { Text("Tìm kiếm bộ từ hoặc tag...") },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                        trailingIcon = {
+                            if (searchQuery.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
+                                    Icon(Icons.Default.Clear, contentDescription = null)
+                                }
                             }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp)
+                            .padding(vertical = 12.dp)
+                            .testTag("set_search_input"),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+                        ),
+                        singleLine = true
+                    )
+
+                    // Topic Filter Chips
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        contentPadding = PaddingValues(horizontal = 20.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(categories) { category ->
+                            FilterChip(
+                                selected = selectedCategory == category,
+                                onClick = { viewModel.updateCategory(category) },
+                                label = { Text(category) },
+                                shape = RoundedCornerShape(100.dp),
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                ),
+                                border = null
+                            )
                         }
-                    } else null
-                )
+                    }
+
+                    Text(
+                        text = "BỘ TỪ VỰNG CỦA BẠN",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        ),
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 12.dp)
+                    )
+                }
+            }
+
+            // 3. Content Section (List or Empty)
+            if (wordSets.isEmpty()) {
+                item {
+                    val description = if (searchQuery.isNotBlank()) {
+                        "Không tìm thấy bộ từ nào khớp với từ khóa \"$searchQuery\"."
+                    } else {
+                        "Hãy tạo bộ từ tiếng Anh đầu tiên của bạn để bứt phá từ vựng!"
+                    }
+                    EmptyPlaceholder(
+                        icon = Icons.Default.LibraryBooks,
+                        title = if (searchQuery.isNotBlank()) "Không tìm thấy" else "Chưa có bộ từ vựng",
+                        description = description,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 64.dp),
+                        actionButton = if (searchQuery.isBlank()) {
+                            {
+                                Button(onClick = { showAddSetDialog = true }) {
+                                    Text("Khởi tạo bộ từ")
+                                }
+                            }
+                        } else null
+                    )
+                }
             } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
-                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(items = wordSets, key = { it.id }) { vocabSet ->
+                items(items = wordSets, key = { it.id }) { vocabSet ->
+                    Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)) {
                         WordSetCard(
                             vocabSet = vocabSet,
                             onSetClick = { onSetSelected(vocabSet.id) },
@@ -174,7 +208,7 @@ fun GreetingHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 20.dp)
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)
     ) {
         // --- 1. Top profile bar (Chào buổi sáng, MinLish) ---
         Row(

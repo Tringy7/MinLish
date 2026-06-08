@@ -4,12 +4,19 @@ import com.example.domain.model.EnglishLevel
 import com.example.domain.repository.UserRepository
 
 class UpdateProfileUseCase(private val repository: UserRepository) {
-    suspend operator fun invoke(englishLevel: EnglishLevel, learningGoal: String) {
+    suspend operator fun invoke(
+        name: String? = null,
+        avatarUrl: String? = null,
+        englishLevel: EnglishLevel? = null,
+        learningGoal: String? = null
+    ) {
         val user = repository.getUser()
         user?.let {
             repository.saveUser(it.copy(
-                englishLevel = englishLevel,
-                learningGoal = learningGoal
+                name = name ?: it.name,
+                avatarUrl = avatarUrl ?: it.avatarUrl,
+                englishLevel = englishLevel ?: it.englishLevel,
+                learningGoal = learningGoal ?: it.learningGoal
             ))
         }
     }

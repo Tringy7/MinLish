@@ -1,5 +1,7 @@
 package com.example.presentation.profile
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.domain.model.EnglishLevel
 import com.example.presentation.VocabularyViewModel
 import com.example.presentation.components.MinLishCard
@@ -36,11 +39,20 @@ fun ProfileScreen(
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val user by viewModel.userState.collectAsState()
+    val user by viewModel.userState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var dailyNotificationEnabled by rememberSaveable { mutableStateOf(true) }
     var reviewAlarmEnabled by rememberSaveable { mutableStateOf(true) }
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            // In a real app, you would copy this to internal storage
+            viewModel.updateProfile(avatarUrl = it.toString())
+        }
+    }
 
     val cefrLevels = EnglishLevel.entries
     val studyGoals = listOf("IELTS", "TOEIC", "Giao tiếp", "Công việc", "Du học", "Khác")
@@ -71,14 +83,36 @@ fun ProfileScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(user?.avatarUrl?.ifBlank { "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256" })
-                            .crossfade(true).build(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(100.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                    )
+                    Box(contentAlignment = Alignment.BottomEnd) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(user?.avatarUrl?.ifBlank { "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256" })
+                                .crossfade(true).build(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(110.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                                .clickable { imagePickerLauncher.launch("image/*") }
+                        )
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            contentColor = Color.White,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .offset(x = (-4).dp, y = (-4).dp)
+                                .clickable { imagePickerLauncher.launch("image/*") },
+                            shadowElevation = 4.dp
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Profile Image",
+                                modifier = Modifier.padding(6.dp).size(16.dp)
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(text = user?.name ?: "User", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold))
                     Text(text = user?.email ?: "email", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -94,7 +128,7 @@ fun ProfileScreen(
                             val isSelected = user?.englishLevel == level
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { viewModel.updateProfile(level, user?.learningGoal ?: "Giao tiếp") },
+                                onClick = { viewModel.updateProfile(level = level) },
                                 label = { Text(level.label) },
                                 modifier = Modifier.weight(1f)
                             )
@@ -112,7 +146,7 @@ fun ProfileScreen(
                             val isSelected = user?.learningGoal == goal
                             FilterChip(
                                 selected = isSelected,
-                                onClick = { viewModel.updateProfile(user?.englishLevel ?: EnglishLevel.B1, goal) },
+                                onClick = { viewModel.updateProfile(goal = goal) },
                                 label = { Text(goal) },
                                 modifier = Modifier.weight(1f)
                             )

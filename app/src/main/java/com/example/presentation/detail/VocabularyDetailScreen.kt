@@ -210,7 +210,7 @@ fun VocabularyDetailScreen(
                         ) {
                             Icon(Icons.Default.HourglassEmpty, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Ôn SM-2 (${dueWords.size})", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("Ôn tập (${dueWords.size})", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
                     }
                     
