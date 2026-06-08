@@ -73,6 +73,26 @@ class VocabularyViewModel(
             getVocabularySetsUseCase(query)
         }
         .flowOn(Dispatchers.IO)
+    private val _selectedCategory = MutableStateFlow("Tất cả")
+    val selectedCategory = _selectedCategory.asStateFlow()
+
+    val categories: StateFlow<List<String>> = getVocabularySetsUseCase("")
+        .map { sets ->
+            listOf("Tất cả") + sets.map { it.category }.distinct().sorted()
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Tất cả"))
+
+    val wordSets: StateFlow<List<VocabularySetEntity>> = combine(
+        _searchQuery.debounce(300),
+        _selectedCategory
+    ) { query, category ->
+        query to category
+    }.flatMapLatest { (query, category) ->
+        getVocabularySetsUseCase(query).map { sets ->
+            if (category == "Tất cả") sets
+            else sets.filter { it.category == category }
+        }
+    }.flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _currentSetId = MutableStateFlow<Int?>(null)
@@ -139,6 +159,10 @@ class VocabularyViewModel(
         _searchQuery.value = query
     }
 
+    fun updateCategory(category: String) {
+        _selectedCategory.value = category
+    }
+
     fun addWord(setId: Int, wordTxt: String, ipa: String, meaningTxt: String, exampleTxt: String, noteTxt: String, descriptionEN: String, collocations: String, relatedWords: String) {
         viewModelScope.launch {
             manageVocabularyWordUseCase.addWord(setId, wordTxt, ipa, meaningTxt, exampleTxt, noteTxt, descriptionEN, collocations, relatedWords)
@@ -181,9 +205,14 @@ class VocabularyViewModel(
         }
     }
 
-    fun updateProfile(level: EnglishLevel, goal: String) {
+    fun updateProfile(
+        name: String? = null,
+        avatarUrl: String? = null,
+        level: EnglishLevel? = null,
+        goal: String? = null
+    ) {
         viewModelScope.launch {
-            updateProfileUseCase(level, goal)
+            updateProfileUseCase(name, avatarUrl, level, goal)
         }
     }
 

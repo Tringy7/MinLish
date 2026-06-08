@@ -88,7 +88,7 @@ class LoginViewModel(
     fun completeSetup(englishLevel: EnglishLevel, learningGoal: String) {
         viewModelScope.launch {
             _uiState.value = LoginUiState.Loading
-            updateProfileUseCase(englishLevel, learningGoal)
+            updateProfileUseCase(englishLevel = englishLevel, learningGoal = learningGoal)
             _uiState.value = LoginUiState.Success
         }
     }
