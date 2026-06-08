@@ -12,6 +12,7 @@ import com.example.domain.usecase.home.*
 import com.example.domain.usecase.vocabulary.*
 import com.example.domain.usecase.flashcard.*
 import com.example.domain.usecase.profile.*
+import com.example.utils.TextToSpeechHelper
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +50,21 @@ class VocabularyViewModel(
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
+
+    // TextToSpeech management
+    private var ttsHelper: TextToSpeechHelper? = null
+
+    fun getTtsHelper(context: Context): TextToSpeechHelper {
+        return ttsHelper ?: synchronized(this) {
+            ttsHelper ?: TextToSpeechHelper(context.applicationContext).also { ttsHelper = it }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        ttsHelper?.shutdown()
+        ttsHelper = null
+    }
 
     val wordSets: StateFlow<List<VocabularySetEntity>> = _searchQuery
         .debounce(300) 

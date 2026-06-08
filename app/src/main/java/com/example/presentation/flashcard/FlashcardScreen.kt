@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Celebration
 import androidx.compose.material.icons.outlined.VolumeUp
@@ -43,29 +45,23 @@ fun FlashcardScreen(
 ) {
     val wordsList by viewModel.wordsInCurrentSet.collectAsState()
 
-    // Filter cards to review using derivedStateOf for better performance
-    val studySessionCards by remember {
-        derivedStateOf {
-            val now = System.currentTimeMillis()
-            if (dueOnly) {
-                wordsList.filter { it.nextReviewTimestamp <= now }
-            } else {
-                wordsList
-            }
+    // Capture the cards once when the screen opens or when the wordsList first arrives
+    // This prevents the list from changing (shrinking) mid-session due to "dueOnly" logic
+    val studySessionCards = remember(wordsList.isNotEmpty()) {
+        val now = System.currentTimeMillis()
+        if (dueOnly) {
+            wordsList.filter { it.nextReviewTimestamp <= now }
+        } else {
+            wordsList
         }
     }
 
-    var currentIndex by remember { mutableStateOf(0) }
+    var currentIndex by remember { mutableIntStateOf(0) }
     var isSessionFinished by remember { mutableStateOf(false) }
-    var reviewsLoggedCount by remember { mutableStateOf(0) }
+    var reviewsLoggedCount by remember { mutableIntStateOf(0) }
 
     val context = LocalContext.current
-    val ttsHelper = remember { TextToSpeechHelper(context) }
-    DisposableEffect(Unit) {
-        onDispose {
-            ttsHelper.shutdown()
-        }
-    }
+    val ttsHelper = remember { viewModel.getTtsHelper(context) }
 
     Scaffold(
         topBar = {
@@ -94,210 +90,213 @@ fun FlashcardScreen(
         ) {
             if (studySessionCards.isEmpty()) {
                 NoCardsScreen(onBack = onBack)
-            } else if (isSessionFinished) {
+            } else if (isSessionFinished || currentIndex >= studySessionCards.size) {
                 FinishedSummaryScreen(
                     totalLogged = reviewsLoggedCount,
                     onBack = onBack
                 )
             } else {
-                val currentWord = studySessionCards[currentIndex]
+                // Safe access with getOrNull to prevent IndexOutOfBoundsException
+                val currentWord = studySessionCards.getOrNull(currentIndex)
                 
-                // Let's automatically read the English word when a new card loads!
-                LaunchedEffect(currentIndex) {
-                    ttsHelper.speak(currentWord.word)
-                }
+                if (currentWord != null) {
+                    // Automatically read the English word when a new card loads
+                    LaunchedEffect(currentIndex) {
+                        ttsHelper.speak(currentWord.word)
+                    }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // Progress Indicator Area
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { if (currentIndex > 0) currentIndex-- },
-                                enabled = currentIndex > 0,
-                                modifier = Modifier.background(
-                                    if (currentIndex > 0) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
-                                    CircleShape
-                                )
-                            ) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Trước đó")
-                            }
-
-                            Text(
-                                text = "Card ${currentIndex + 1} / ${studySessionCards.size}",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
-                            )
-
-                            IconButton(
-                                onClick = { 
-                                    advanceSession(
-                                        size = studySessionCards.size,
-                                        currentIndex = currentIndex,
-                                        onIncrement = { currentIndex = it },
-                                        onFinish = { isSessionFinished = true }
-                                    )
-                                },
-                                modifier = Modifier.background(
-                                    MaterialTheme.colorScheme.secondaryContainer,
-                                    CircleShape
-                                )
-                            ) {
-                                Icon(Icons.Default.ArrowForward, contentDescription = "Tiếp theo")
-                            }
-                        }
-                        
-                        Spacer(modifier = Modifier.height(8.dp))
-                        
-                        LinearProgressIndicator(
-                            progress = { (currentIndex.toFloat() + 1) / studySessionCards.size.toFloat() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-                        )
-                    }
-
-                    // Interactive 3D Flipping Card
-                    Box(
                         modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        FlippingFlashcard(
-                            word = currentWord,
-                            ttsHelper = ttsHelper
-                        )
-                    }
-
-                    // SM-2 Spaced Repetition Rating Controller
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        // Progress Indicator Area
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = "Bạn có nhớ từ này không?",
-                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-
-                            TextButton(
-                                onClick = {
-                                    // Marking as Learned = 5 (Perfect) in SM-2 logic
-                                    viewModel.reviewWordResponse(currentWord, 4)
-                                    reviewsLoggedCount++
-                                    advanceSession(
-                                        size = studySessionCards.size,
-                                        currentIndex = currentIndex,
-                                        onIncrement = { currentIndex = it },
-                                        onFinish = { isSessionFinished = true }
-                                    )
-                                },
-                                colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2E7D32))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Đã thuộc (Mastered)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                IconButton(
+                                    onClick = { if (currentIndex > 0) currentIndex-- },
+                                    enabled = currentIndex > 0,
+                                    modifier = Modifier.background(
+                                        if (currentIndex > 0) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+                                        CircleShape
+                                    )
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Trước đó")
+                                }
+
+                                Text(
+                                    text = "Card ${currentIndex + 1} / ${studySessionCards.size}",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+
+                                IconButton(
+                                    onClick = {
+                                        advanceSession(
+                                            size = studySessionCards.size,
+                                            currentIndex = currentIndex,
+                                            onIncrement = { currentIndex = it },
+                                            onFinish = { isSessionFinished = true }
+                                        )
+                                    },
+                                    modifier = Modifier.background(
+                                        MaterialTheme.colorScheme.secondaryContainer,
+                                        CircleShape
+                                    )
+                                ) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Tiếp theo")
+                                }
                             }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LinearProgressIndicator(
+                                progress = { (currentIndex.toFloat() + 1).coerceAtMost(studySessionCards.size.toFloat()) / studySessionCards.size.toFloat() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp)),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                            )
                         }
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        // Interactive 3D Flipping Card
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
                         ) {
-                            // Again Button (Red) - Reset interval, quality 1
-                            ReviewButton(
-                                text = "Lại (Again)",
-                                subtitle = "Quên",
-                                modifier = Modifier.weight(1f).testTag("rating_again_btn"),
-                                containerColor = Color(0xFFFFEBEE),
-                                contentColor = Color(0xFFC62828),
-                                onClick = {
-                                    viewModel.reviewWordResponse(currentWord, 1)
-                                    reviewsLoggedCount++
-                                    advanceSession(
-                                        size = studySessionCards.size,
-                                        currentIndex = currentIndex,
-                                        onIncrement = { currentIndex = it },
-                                        onFinish = { isSessionFinished = true }
-                                    )
-                                }
+                            FlippingFlashcard(
+                                word = currentWord,
+                                ttsHelper = ttsHelper
                             )
+                        }
 
-                            // Hard Button (Orange) - quality 2
-                            ReviewButton(
-                                text = "Khó (Hard)",
-                                subtitle = "Lờ mờ",
-                                modifier = Modifier.weight(1f).testTag("rating_hard_btn"),
-                                containerColor = Color(0xFFFFF3E0),
-                                contentColor = Color(0xFFE65100),
-                                onClick = {
-                                    viewModel.reviewWordResponse(currentWord, 2)
-                                    reviewsLoggedCount++
-                                    advanceSession(
-                                        size = studySessionCards.size,
-                                        currentIndex = currentIndex,
-                                        onIncrement = { currentIndex = it },
-                                        onFinish = { isSessionFinished = true }
-                                    )
-                                }
-                            )
+                        // SM-2 Spaced Repetition Rating Controller
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Bạn có nhớ từ này không?",
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
 
-                            // Good Button (Blue) - quality 3
-                            ReviewButton(
-                                text = "Tốt (Good)",
-                                subtitle = "Nhớ kịp",
-                                modifier = Modifier.weight(1f).testTag("rating_good_btn"),
-                                containerColor = Color(0xFFE3F2FD),
-                                contentColor = Color(0xFF1565C0),
-                                onClick = {
-                                    viewModel.reviewWordResponse(currentWord, 3)
-                                    reviewsLoggedCount++
-                                    advanceSession(
-                                        size = studySessionCards.size,
-                                        currentIndex = currentIndex,
-                                        onIncrement = { currentIndex = it },
-                                        onFinish = { isSessionFinished = true }
-                                    )
+                                TextButton(
+                                    onClick = {
+                                        // Marking as Learned = Rating 4 (Easy) in SM-2 logic
+                                        viewModel.reviewWordResponse(currentWord, 4)
+                                        reviewsLoggedCount++
+                                        advanceSession(
+                                            size = studySessionCards.size,
+                                            currentIndex = currentIndex,
+                                            onIncrement = { currentIndex = it },
+                                            onFinish = { isSessionFinished = true }
+                                        )
+                                    },
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2E7D32))
+                                ) {
+                                    Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Đã thuộc (Mastered)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 }
-                            )
+                            }
 
-                            // Easy Button (Green) - quality 4
-                            ReviewButton(
-                                text = "Dễ (Easy)",
-                                subtitle = "Nhớ ngay",
-                                modifier = Modifier.weight(1f).testTag("rating_easy_btn"),
-                                containerColor = Color(0xFFE8F5E9),
-                                contentColor = Color(0xFF2E7D32),
-                                onClick = {
-                                    viewModel.reviewWordResponse(currentWord, 4)
-                                    reviewsLoggedCount++
-                                    advanceSession(
-                                        size = studySessionCards.size,
-                                        currentIndex = currentIndex,
-                                        onIncrement = { currentIndex = it },
-                                        onFinish = { isSessionFinished = true }
-                                    )
-                                }
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Again Button (Red) - quality 1
+                                ReviewButton(
+                                    text = "Lại (Again)",
+                                    subtitle = "Quên",
+                                    modifier = Modifier.weight(1f).testTag("rating_again_btn"),
+                                    containerColor = Color(0xFFFFEBEE),
+                                    contentColor = Color(0xFFC62828),
+                                    onClick = {
+                                        viewModel.reviewWordResponse(currentWord, 1)
+                                        reviewsLoggedCount++
+                                        advanceSession(
+                                            size = studySessionCards.size,
+                                            currentIndex = currentIndex,
+                                            onIncrement = { currentIndex = it },
+                                            onFinish = { isSessionFinished = true }
+                                        )
+                                    }
+                                )
+
+                                // Hard Button (Orange) - quality 2
+                                ReviewButton(
+                                    text = "Khó (Hard)",
+                                    subtitle = "Lờ mờ",
+                                    modifier = Modifier.weight(1f).testTag("rating_hard_btn"),
+                                    containerColor = Color(0xFFFFF3E0),
+                                    contentColor = Color(0xFFE65100),
+                                    onClick = {
+                                        viewModel.reviewWordResponse(currentWord, 2)
+                                        reviewsLoggedCount++
+                                        advanceSession(
+                                            size = studySessionCards.size,
+                                            currentIndex = currentIndex,
+                                            onIncrement = { currentIndex = it },
+                                            onFinish = { isSessionFinished = true }
+                                        )
+                                    }
+                                )
+
+                                // Good Button (Blue) - quality 3
+                                ReviewButton(
+                                    text = "Tốt (Good)",
+                                    subtitle = "Nhớ kịp",
+                                    modifier = Modifier.weight(1f).testTag("rating_good_btn"),
+                                    containerColor = Color(0xFFE3F2FD),
+                                    contentColor = Color(0xFF1565C0),
+                                    onClick = {
+                                        viewModel.reviewWordResponse(currentWord, 3)
+                                        reviewsLoggedCount++
+                                        advanceSession(
+                                            size = studySessionCards.size,
+                                            currentIndex = currentIndex,
+                                            onIncrement = { currentIndex = it },
+                                            onFinish = { isSessionFinished = true }
+                                        )
+                                    }
+                                )
+
+                                // Easy Button (Green) - quality 4
+                                ReviewButton(
+                                    text = "Dễ (Easy)",
+                                    subtitle = "Nhớ ngay",
+                                    modifier = Modifier.weight(1f).testTag("rating_easy_btn"),
+                                    containerColor = Color(0xFFE8F5E9),
+                                    contentColor = Color(0xFF2E7D32),
+                                    onClick = {
+                                        viewModel.reviewWordResponse(currentWord, 4)
+                                        reviewsLoggedCount++
+                                        advanceSession(
+                                            size = studySessionCards.size,
+                                            currentIndex = currentIndex,
+                                            onIncrement = { currentIndex = it },
+                                            onFinish = { isSessionFinished = true }
+                                        )
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -329,7 +328,7 @@ fun FlippingFlashcard(
     // 3D Flip animation
     val rotation by animateFloatAsState(
         targetValue = if (isFlipped) 180f else 0f,
-        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing), label = "flip_animation"
     )
 
     Card(
