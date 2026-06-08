@@ -15,7 +15,7 @@ class ReviewWordUseCase(
     private val historyRepository: ReviewHistoryRepository,
     private val updateStreakUseCase: UpdateStreakUseCase
 ) {
-    suspend operator fun invoke(word: VocabularyWordEntity, rating: Int) {
+    suspend operator fun invoke(word: VocabularyWordEntity, rating: Int, userId: Int) {
         // Calculate algorithm results
         val sm2Result = SpacedRepetitionCalculator.calculate(
             repetitions = word.repetitions,
@@ -40,7 +40,7 @@ class ReviewWordUseCase(
         // Log to history
         val historyEntry = ReviewHistoryEntity(
             wordId = word.id,
-            userId = word.userId,
+            userId = userId,
             rating = rating,
             reviewedAt = System.currentTimeMillis()
         )

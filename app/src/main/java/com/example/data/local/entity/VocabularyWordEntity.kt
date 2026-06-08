@@ -17,7 +17,6 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(value = ["setId"]),
-        Index(value = ["userId"]),
         Index(value = ["nextReviewTimestamp"]),
         Index(value = ["isFavorite"])
     ]
@@ -25,7 +24,6 @@ import androidx.room.PrimaryKey
 data class VocabularyWordEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val setId: Int,
-    val userId: Int,
     val word: String,
     val pronunciation: String,
     val meaning: String,

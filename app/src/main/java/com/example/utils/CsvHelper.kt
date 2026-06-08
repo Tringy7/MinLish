@@ -24,7 +24,7 @@ object CsvHelper {
         return sb.toString()
     }
 
-    fun parseCsv(csvData: String, setId: Int, userId: Int): List<VocabularyWordEntity> {
+    fun parseCsv(csvData: String, setId: Int): List<VocabularyWordEntity> {
         val lines = csvData.lines()
         if (lines.size <= 1) return emptyList()
 
@@ -37,7 +37,6 @@ object CsvHelper {
                     words.add(
                         VocabularyWordEntity(
                             setId = setId,
-                            userId = userId,
                             word = parts.getOrNull(0) ?: "",
                             pronunciation = parts.getOrNull(1) ?: "",
                             meaning = parts.getOrNull(2) ?: "",

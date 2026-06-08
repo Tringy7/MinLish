@@ -1,8 +1,8 @@
 package com.example.data.repository
 
-import com.example.data.local.AuthManager
 import com.example.data.local.dao.VocabularySetDao
 import com.example.data.local.entity.VocabularySetEntity
+import com.example.data.security.TokenManager
 import com.example.domain.repository.VocabularySetRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -13,12 +13,11 @@ import kotlinx.coroutines.flow.flowOf
 @OptIn(ExperimentalCoroutinesApi::class)
 class VocabularySetRepositoryImpl(
     private val vocabularySetDao: VocabularySetDao,
-    private val authManager: AuthManager
+    private val tokenManager: TokenManager
 ) : VocabularySetRepository {
 
     override fun getAllSetsFlow(): Flow<List<VocabularySetEntity>> {
-        return authManager.currentUserId.flatMapLatest { id ->
-            // If user is not logged in, we still show system sets (userId = -1 for query)
+        return tokenManager.userId.flatMapLatest { id ->
             val userId = if (id != null && id != -1) id else -1
             vocabularySetDao.getAllAvailableSetsFlow(userId)
         }
@@ -27,7 +26,7 @@ class VocabularySetRepositoryImpl(
     override suspend fun getSetById(id: Int): VocabularySetEntity? = vocabularySetDao.getSetById(id)
 
     override fun searchSetsFlow(query: String): Flow<List<VocabularySetEntity>> {
-        return authManager.currentUserId.flatMapLatest { id ->
+        return tokenManager.userId.flatMapLatest { id ->
             val userId = if (id != null && id != -1) id else -1
             vocabularySetDao.searchSetsFlow(userId, query)
         }
@@ -38,7 +37,7 @@ class VocabularySetRepositoryImpl(
             val result = vocabularySetDao.insertSet(set).toInt()
             return if (result == -1) set.id else result
         }
-        val userId = authManager.currentUserId.first()
+        val userId = tokenManager.userId.first()
         val result = vocabularySetDao.insertSet(set.copy(userId = userId)).toInt()
         return if (result == -1 && set.id != 0) set.id else result
     }

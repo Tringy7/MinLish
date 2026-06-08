@@ -21,6 +21,7 @@ interface AuthRepository {
     suspend fun googleSignIn(email: String, displayName: String, avatarUrl: String): Result<UserEntity>
 
     suspend fun logout()
+    suspend fun refreshToken(): Result<String>
     suspend fun getCurrentUser(): UserEntity?
     fun getCurrentUserFlow(): Flow<UserEntity?>
 }

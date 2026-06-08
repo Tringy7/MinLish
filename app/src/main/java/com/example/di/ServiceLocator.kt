@@ -2,9 +2,11 @@ package com.example.di
 
 import android.content.Context
 import com.example.data.local.AppDatabase
-import com.example.data.local.AuthManager
+import com.example.data.remote.AuthAuthenticator
 import com.example.data.remote.AuthInterceptor
 import com.example.data.repository.*
+import com.example.data.security.JwtService
+import com.example.data.security.TokenManager
 import com.example.domain.repository.*
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -16,7 +18,10 @@ object ServiceLocator {
     private var database: AppDatabase? = null
     
     @Volatile
-    private var authManager: AuthManager? = null
+    private var tokenManager: TokenManager? = null
+
+    @Volatile
+    private var jwtService: JwtService? = null
 
     @Volatile
     private var authRepository: AuthRepository? = null
@@ -33,18 +38,27 @@ object ServiceLocator {
         }
     }
 
-    fun getAuthManager(context: Context): AuthManager {
-        return authManager ?: synchronized(this) {
-            val manager = authManager ?: AuthManager(context)
-            authManager = manager
+    fun getTokenManager(context: Context): TokenManager {
+        return tokenManager ?: synchronized(this) {
+            val manager = tokenManager ?: TokenManager(context)
+            tokenManager = manager
             manager
+        }
+    }
+
+    fun getJwtService(): JwtService {
+        return jwtService ?: synchronized(this) {
+            val service = jwtService ?: JwtService()
+            jwtService = service
+            service
         }
     }
 
     private fun getOkHttpClient(context: Context): OkHttpClient {
         return okHttpClient ?: synchronized(this) {
             okHttpClient ?: OkHttpClient.Builder()
-                .addInterceptor(AuthInterceptor(getAuthManager(context)))
+                .addInterceptor(AuthInterceptor(getTokenManager(context)))
+                .authenticator(AuthAuthenticator(getTokenManager(context), getJwtService(), getDatabase(context).userDao()))
                 .build()
                 .also { okHttpClient = it }
         }
@@ -53,7 +67,7 @@ object ServiceLocator {
     fun getRetrofit(context: Context): Retrofit {
         return retrofit ?: synchronized(this) {
             retrofit ?: Retrofit.Builder()
-                .baseUrl("https://your-api-endpoint.com/") // Replace with your real API URL
+                .baseUrl("https://your-api-endpoint.com/") 
                 .client(getOkHttpClient(context))
                 .addConverterFactory(MoshiConverterFactory.create())
                 .build()
@@ -65,7 +79,8 @@ object ServiceLocator {
         return authRepository ?: synchronized(this) {
             val repo = authRepository ?: AuthRepositoryImpl(
                 getDatabase(context).userDao(),
-                getAuthManager(context)
+                getTokenManager(context),
+                getJwtService()
             )
             authRepository = repo
             repo
@@ -75,28 +90,27 @@ object ServiceLocator {
     fun provideUserRepository(context: Context): UserRepository {
         return UserRepositoryImpl(
             getDatabase(context).userDao(),
-            getAuthManager(context)
+            getTokenManager(context)
         )
     }
 
     fun provideVocabularySetRepository(context: Context): VocabularySetRepository {
         return VocabularySetRepositoryImpl(
             getDatabase(context).vocabularySetDao(),
-            getAuthManager(context)
+            getTokenManager(context)
         )
     }
 
     fun provideVocabularyWordRepository(context: Context): VocabularyWordRepository {
         return VocabularyWordRepositoryImpl(
-            getDatabase(context).vocabularyWordDao(),
-            getAuthManager(context)
+            getDatabase(context).vocabularyWordDao()
         )
     }
 
     fun provideReviewHistoryRepository(context: Context): ReviewHistoryRepository {
         return ReviewHistoryRepositoryImpl(
             getDatabase(context).reviewHistoryDao(),
-            getAuthManager(context)
+            getTokenManager(context)
         )
     }
 }

@@ -25,8 +25,6 @@ typealias DailyActivity = com.example.domain.model.DailyActivity
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 class VocabularyViewModel(
     private val getUserUseCase: GetUserUseCase,
-    private val loginUseCase: LoginUseCase,
-    private val signUpUseCase: SignUpUseCase,
     private val logoutUseCase: LogoutUseCase,
     private val observeLoginStateUseCase: ObserveLoginStateUseCase,
     private val getDashboardStatsUseCase: GetDashboardStatsUseCase,
@@ -143,18 +141,6 @@ class VocabularyViewModel(
     val nhoNgayWords: StateFlow<List<VocabularyWordEntity>> = manageVocabularyWordUseCase.getNhoNgayWordsFlow()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun login(email: String, password: String) {
-        viewModelScope.launch {
-            loginUseCase(email, password)
-        }
-    }
-
-    fun signUp(email: String, name: String, password: String, englishLevel: EnglishLevel, learningGoal: String) {
-        viewModelScope.launch {
-            signUpUseCase(name, email, password, englishLevel, learningGoal)
-        }
-    }
-
     fun logout() {
         viewModelScope.launch {
             logoutUseCase()
@@ -175,8 +161,7 @@ class VocabularyViewModel(
 
     fun addWord(setId: Int, wordTxt: String, ipa: String, meaningTxt: String, exampleTxt: String, noteTxt: String, descriptionEN: String, collocations: String, relatedWords: String) {
         viewModelScope.launch {
-            val userId = userState.value?.id ?: 1
-            manageVocabularyWordUseCase.addWord(userId, setId, wordTxt, ipa, meaningTxt, exampleTxt, noteTxt, descriptionEN, collocations, relatedWords)
+            manageVocabularyWordUseCase.addWord(setId, wordTxt, ipa, meaningTxt, exampleTxt, noteTxt, descriptionEN, collocations, relatedWords)
         }
     }
 
@@ -230,7 +215,8 @@ class VocabularyViewModel(
 
     fun reviewWordResponse(word: VocabularyWordEntity, rating: Int) {
         viewModelScope.launch {
-            reviewWordUseCase(word, rating)
+            val userId = userState.value?.id ?: 1
+            reviewWordUseCase(word, rating, userId)
         }
     }
 
@@ -243,8 +229,7 @@ class VocabularyViewModel(
 
     fun importWords(setId: Int, csvData: String) {
         viewModelScope.launch {
-            val userId = userState.value?.id ?: 1
-            importWordsUseCase(setId, csvData, userId)
+            importWordsUseCase(setId, csvData)
         }
     }
 
@@ -260,8 +245,6 @@ class VocabularyViewModel(
                 
                 return VocabularyViewModel(
                     getUserUseCase = GetUserUseCase(authRepo),
-                    loginUseCase = LoginUseCase(authRepo),
-                    signUpUseCase = SignUpUseCase(authRepo),
                     logoutUseCase = LogoutUseCase(authRepo),
                     observeLoginStateUseCase = ObserveLoginStateUseCase(authRepo),
                     getDashboardStatsUseCase = GetDashboardStatsUseCase(userRepo, wordRepo, historyRepo),
