@@ -31,6 +31,9 @@ import com.example.data.local.entity.VocabularyWordEntity
 import com.example.presentation.VocabularyViewModel
 import com.example.presentation.components.*
 import com.example.utils.TextToSpeechHelper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,20 +48,27 @@ fun VocabularyDetailScreen(
     val wordSet by viewModel.currentSet.collectAsState()
     val wordsList by viewModel.wordsInCurrentSet.collectAsState()
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
     ) { uri ->
         uri?.let {
-            try {
-                context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
-                    val csvData = reader.readText()
-                    wordSet?.id?.let { setId ->
-                        viewModel.importWords(setId, csvData)
+            scope.launch {
+                try {
+                    val csvData = withContext(Dispatchers.IO) {
+                        context.contentResolver.openInputStream(it)?.bufferedReader()?.use { reader ->
+                            reader.readText()
+                        }
                     }
+                    csvData?.let { data ->
+                        wordSet?.id?.let { setId ->
+                            viewModel.importWords(setId, data)
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Log error or show toast
                 }
-            } catch (e: Exception) {
-                // Log error or show toast
             }
         }
     }
@@ -69,25 +79,24 @@ fun VocabularyDetailScreen(
         uri?.let {
             wordSet?.id?.let { setId ->
                 viewModel.exportWords(setId) { csvData ->
-                    try {
-                        context.contentResolver.openOutputStream(it)?.use { output ->
-                            output.write(csvData.toByteArray())
+                    scope.launch {
+                        try {
+                            withContext(Dispatchers.IO) {
+                                context.contentResolver.openOutputStream(it)?.use { output ->
+                                    output.write(csvData.toByteArray())
+                                }
+                            }
+                        } catch (e: Exception) {
+                            // Log error or show toast
                         }
-                    } catch (e: Exception) {
-                        // Log error or show toast
                     }
                 }
             }
         }
     }
 
-    // Initialize TTS helper cleanly
-    val ttsHelper = remember { TextToSpeechHelper(context) }
-    DisposableEffect(Unit) {
-        onDispose {
-            ttsHelper.shutdown()
-        }
-    }
+    // Initialize TTS helper cleanly from ViewModel
+    val ttsHelper = remember { viewModel.getTtsHelper(context) }
 
     var wordQuery by remember { mutableStateOf("") }
     val filteredWords by remember {

@@ -25,9 +25,11 @@ class MinLishApplication : Application() {
         NotificationHelper.createNotificationChannels(this)
 
         // Khởi tạo dữ liệu mẫu trong Coroutine để không block Main Thread
-        applicationScope.launch {
+        applicationScope.launch(Dispatchers.IO) {
             Log.d("MinLishApplication", "Starting database seeding...")
             try {
+                // Pre-warm the database connection
+                ServiceLocator.provideUserRepository(this@MinLishApplication).getUser()
                 seedDatabase()
             } catch (e: Exception) {
                 Log.e("MinLishApplication", "Error seeding database", e)

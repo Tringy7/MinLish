@@ -40,7 +40,7 @@ class GetDashboardStatsUseCase(
                 dueTodayCount = dueCount,
                 estimatedLevel = estimateLevel(learnedWords),
                 newWordsTodayCount = totalWords - learnedWords,
-                dailyActivities = generateDailyActivities(history)
+                dailyActivities = generateDailyActivities(history, now)
             )
         }.flowOn(Dispatchers.Default)
     }
@@ -83,7 +83,8 @@ class GetDashboardStatsUseCase(
     }
 
     private fun generateDailyActivities(
-        history: List<ReviewHistoryEntity>
+        history: List<ReviewHistoryEntity>,
+        baseTime: Long
     ): List<DailyActivity> {
 
         val sdf = SimpleDateFormat(
@@ -93,9 +94,11 @@ class GetDashboardStatsUseCase(
 
         val dayLabels = mutableListOf<String>()
         val activitiesMap = mutableMapOf<String, Int>()
+        val calendar = Calendar.getInstance()
 
         for (i in 6 downTo 0) {
-            val calendar = Calendar.getInstance()
+            // Reuse calendar object to reduce allocation in loop
+            calendar.timeInMillis = baseTime
             calendar.add(Calendar.DAY_OF_YEAR, -i)
 
             val label = sdf.format(calendar.time)
