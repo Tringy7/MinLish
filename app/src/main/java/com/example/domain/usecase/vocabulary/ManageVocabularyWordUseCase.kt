@@ -5,6 +5,7 @@ import com.example.domain.repository.VocabularyWordRepository
 
 class ManageVocabularyWordUseCase(private val repository: VocabularyWordRepository) {
     suspend fun addWord(
+        userId: Int,
         setId: Int,
         wordTxt: String,
         ipa: String,
@@ -19,6 +20,7 @@ class ManageVocabularyWordUseCase(private val repository: VocabularyWordReposito
         return repository.insertWord(
             VocabularyWordEntity(
                 setId = setId,
+                userId = userId,
                 word = wordTxt,
                 pronunciation = ipa,
                 meaning = meaningTxt,

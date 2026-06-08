@@ -18,7 +18,7 @@ import com.example.data.local.entity.*
         VocabularyWordEntity::class,
         ReviewHistoryEntity::class
     ],
-    version = 2,
+    version = 1,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

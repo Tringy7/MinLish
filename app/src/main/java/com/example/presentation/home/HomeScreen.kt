@@ -191,6 +191,7 @@ fun HomeScreen(
 
     if (showAddSetDialog) {
         AddSetDialog(
+            userGoal = user?.learningGoal ?: "Giao tiếp",
             onDismiss = { showAddSetDialog = false },
             onConfirm = { name, desc, tags ->
                 viewModel.addSet(name, desc, tags)
@@ -486,12 +487,15 @@ fun WordSetCard(
 
 @Composable
 fun AddSetDialog(
+    userGoal: String,
     onDismiss: () -> Unit,
     onConfirm: (String, String, String) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
-    var tags by remember { mutableStateOf("") }
+    var selectedTags by remember { mutableStateOf(setOf(userGoal)) }
+
+    val studyGoals = listOf("IELTS", "TOEIC", "Giao tiếp", "Công việc", "Du học", "Khác")
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -515,20 +519,46 @@ fun AddSetDialog(
                     shape = RoundedCornerShape(10.dp)
                 )
 
-                OutlinedTextField(
-                    value = tags,
-                    onValueChange = { tags = it },
-                    label = { Text("Nhãn (mỗi nhãn cách bằng dấu phẩy)") },
-                    placeholder = { Text("Ví dụ: IELTS, Academic, Daily") },
-                    modifier = Modifier.fillMaxWidth().testTag("dialog_set_tags"),
-                    shape = RoundedCornerShape(10.dp),
-                    singleLine = true
+                Text(
+                    text = "Chọn nhãn mục tiêu:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
+
+                // Multi-select goals
+                studyGoals.chunked(3).forEach { rowGoals ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        rowGoals.forEach { goal ->
+                            val isSelected = selectedTags.contains(goal)
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedTags = if (isSelected) {
+                                        selectedTags - goal
+                                    } else {
+                                        selectedTags + goal
+                                    }
+                                },
+                                label = { Text(goal, fontSize = 12.sp) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
             Button(
-                onClick = { if (name.isNotBlank()) onConfirm(name, description, tags) },
+                onClick = { 
+                    if (name.isNotBlank()) {
+                        val tagsString = selectedTags.joinToString(", ")
+                        onConfirm(name, description, tagsString)
+                    }
+                },
                 enabled = name.isNotBlank()
             ) {
                 Text("Lưu lại")

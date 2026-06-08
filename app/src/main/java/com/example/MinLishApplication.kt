@@ -77,6 +77,7 @@ class MinLishApplication : Application() {
             val words1 = listOf(
                 VocabularyWordEntity(
                     setId = setId1,
+                    userId = 1,
                     word = "Pragmatic",
                     pronunciation = "/præɡˈmæt.ɪk/",
                     meaning = "Thực tiễn, thực tế, giải quyết vấn đề khách quan",
@@ -89,6 +90,7 @@ class MinLishApplication : Application() {
                 ),
                 VocabularyWordEntity(
                     setId = setId1,
+                    userId = 1,
                     word = "Eloquent",
                     pronunciation = "/ˈel.ə.kwənt/",
                     meaning = "Hùng biện, có tài ăn nói lưu loát, thuyết phục",
@@ -101,6 +103,7 @@ class MinLishApplication : Application() {
                 ),
                 VocabularyWordEntity(
                     setId = setId1,
+                    userId = 1,
                     word = "Ubiquitous",
                     pronunciation = "/juːˈbɪk.wɪ.təs/",
                     meaning = "Có mặt ở khắp mọi nơi, phổ biến rộng rãi",
@@ -130,6 +133,7 @@ class MinLishApplication : Application() {
             val words2 = listOf(
                 VocabularyWordEntity(
                     setId = setId2,
+                    userId = 1,
                     word = "Break a leg",
                     pronunciation = "/breɪk ə leɡ/",
                     meaning = "Chúc may mắn! (Nói trước khi lên sân khấu)",
@@ -142,6 +146,7 @@ class MinLishApplication : Application() {
                 ),
                 VocabularyWordEntity(
                     setId = setId2,
+                    userId = 1,
                     word = "Bite the bullet",
                     pronunciation = "/baɪt ðə ˈbʊl.ɪt/",
                     meaning = "Cắn răng chịu đựng, chấp nhận đối mặt khó khăn",

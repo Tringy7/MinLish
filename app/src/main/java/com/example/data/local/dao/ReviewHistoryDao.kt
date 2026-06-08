@@ -9,21 +9,21 @@ interface ReviewHistoryDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertHistory(history: ReviewHistoryEntity): Long
 
-    @Query("SELECT * FROM review_history ORDER BY reviewedAt DESC LIMIT :limit")
-    fun getRecentHistoryFlow(limit: Int): Flow<List<ReviewHistoryEntity>>
+    @Query("SELECT * FROM review_history WHERE userId = :userId ORDER BY reviewedAt DESC LIMIT :limit")
+    fun getRecentHistoryFlow(userId: Int, limit: Int): Flow<List<ReviewHistoryEntity>>
 
-    @Query("SELECT * FROM review_history ORDER BY reviewedAt ASC")
-    fun getAllHistoryFlow(): Flow<List<ReviewHistoryEntity>>
+    @Query("SELECT * FROM review_history WHERE userId = :userId ORDER BY reviewedAt ASC")
+    fun getAllHistoryFlow(userId: Int): Flow<List<ReviewHistoryEntity>>
   
-    @Query("SELECT COUNT(*) FROM review_history WHERE reviewedAt >= :startTime")
-    fun getReviewCountSinceFlow(startTime: Long): Flow<Int>
+    @Query("SELECT COUNT(*) FROM review_history WHERE userId = :userId AND reviewedAt >= :startTime")
+    fun getReviewCountSinceFlow(userId: Int, startTime: Long): Flow<Int>
 
-    @Query("SELECT COUNT(DISTINCT wordId) FROM review_history WHERE reviewedAt >= :startTime")
-    fun getUniqueWordsReviewedSinceFlow(startTime: Long): Flow<Int>
+    @Query("SELECT COUNT(DISTINCT wordId) FROM review_history WHERE userId = :userId AND reviewedAt >= :startTime")
+    fun getUniqueWordsReviewedSinceFlow(userId: Int, startTime: Long): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM review_history")
-    fun getTotalReviewsFlow(): Flow<Int>
+    @Query("SELECT COUNT(*) FROM review_history WHERE userId = :userId")
+    fun getTotalReviewsFlow(userId: Int): Flow<Int>
 
-    @Query("SELECT * FROM review_history")
-    suspend fun getAllHistories(): List<ReviewHistoryEntity>
+    @Query("SELECT * FROM review_history WHERE userId = :userId")
+    suspend fun getAllHistories(userId: Int): List<ReviewHistoryEntity>
 }

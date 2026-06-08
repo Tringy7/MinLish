@@ -158,7 +158,8 @@ class VocabularyViewModel(
 
     fun addWord(setId: Int, wordTxt: String, ipa: String, meaningTxt: String, exampleTxt: String, noteTxt: String, descriptionEN: String, collocations: String, relatedWords: String) {
         viewModelScope.launch {
-            manageVocabularyWordUseCase.addWord(setId, wordTxt, ipa, meaningTxt, exampleTxt, noteTxt, descriptionEN, collocations, relatedWords)
+            val userId = userState.value?.id ?: 1
+            manageVocabularyWordUseCase.addWord(userId, setId, wordTxt, ipa, meaningTxt, exampleTxt, noteTxt, descriptionEN, collocations, relatedWords)
         }
     }
 
@@ -224,7 +225,8 @@ class VocabularyViewModel(
 
     fun importWords(setId: Int, csvData: String) {
         viewModelScope.launch {
-            importWordsUseCase(setId, csvData)
+            val userId = userState.value?.id ?: 1
+            importWordsUseCase(setId, csvData, userId)
         }
     }
 

@@ -57,10 +57,16 @@ object ServiceLocator {
     }
 
     fun provideVocabularyWordRepository(context: Context): VocabularyWordRepository {
-        return VocabularyWordRepositoryImpl(getDatabase(context).vocabularyWordDao())
+        return VocabularyWordRepositoryImpl(
+            getDatabase(context).vocabularyWordDao(),
+            getSessionManager(context)
+        )
     }
 
     fun provideReviewHistoryRepository(context: Context): ReviewHistoryRepository {
-        return ReviewHistoryRepositoryImpl(getDatabase(context).reviewHistoryDao())
+        return ReviewHistoryRepositoryImpl(
+            getDatabase(context).reviewHistoryDao(),
+            getSessionManager(context)
+        )
     }
 }

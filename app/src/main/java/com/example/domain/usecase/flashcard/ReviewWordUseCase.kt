@@ -40,6 +40,7 @@ class ReviewWordUseCase(
         // Log to history
         val historyEntry = ReviewHistoryEntity(
             wordId = word.id,
+            userId = word.userId,
             rating = rating,
             reviewedAt = System.currentTimeMillis()
         )

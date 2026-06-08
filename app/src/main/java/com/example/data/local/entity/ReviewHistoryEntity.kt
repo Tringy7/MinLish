@@ -13,13 +13,23 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["wordId"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = UserEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["userId"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["wordId"])]
+    indices = [
+        Index(value = ["wordId"]),
+        Index(value = ["userId"])
+    ]
 )
 data class ReviewHistoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val wordId: Int,
-    val rating: Int, // 1: Again, 2: Hard, 3: Good, 4: Easy
+    val userId: Int,
+    val rating: Int, // 0: Again, 3: Hard, 4: Good, 5: Easy
     val reviewedAt: Long = System.currentTimeMillis()
 )

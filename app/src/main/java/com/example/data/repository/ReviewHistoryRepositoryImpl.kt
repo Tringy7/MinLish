@@ -1,18 +1,55 @@
 package com.example.data.repository
 
+import com.example.data.local.SessionManager
 import com.example.data.local.dao.ReviewHistoryDao
 import com.example.data.local.entity.ReviewHistoryEntity
 import com.example.domain.repository.ReviewHistoryRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ReviewHistoryRepositoryImpl(
-    private val reviewHistoryDao: ReviewHistoryDao
+    private val reviewHistoryDao: ReviewHistoryDao,
+    private val sessionManager: SessionManager
 ) : ReviewHistoryRepository {
     override suspend fun insertHistory(history: ReviewHistoryEntity) = reviewHistoryDao.insertHistory(history).let { Unit }
-    override fun getRecentHistoryFlow(limit: Int): Flow<List<ReviewHistoryEntity>> = reviewHistoryDao.getRecentHistoryFlow(limit)
-    override fun getAllHistoryFlow(): Flow<List<ReviewHistoryEntity>> = reviewHistoryDao.getAllHistoryFlow()
-    override fun getReviewCountSinceFlow(startTime: Long): Flow<Int> = reviewHistoryDao.getReviewCountSinceFlow(startTime)
-    override fun getUniqueWordsReviewedSinceFlow(startTime: Long): Flow<Int> = reviewHistoryDao.getUniqueWordsReviewedSinceFlow(startTime)
-    override fun getTotalReviewsFlow(): Flow<Int> = reviewHistoryDao.getTotalReviewsFlow()
-    override suspend fun getAllHistories(): List<ReviewHistoryEntity> = reviewHistoryDao.getAllHistories()
+    
+    override fun getRecentHistoryFlow(limit: Int): Flow<List<ReviewHistoryEntity>> = 
+        sessionManager.currentUserId.flatMapLatest { userId ->
+            if (userId == null) flowOf(emptyList())
+            else reviewHistoryDao.getRecentHistoryFlow(userId, limit)
+        }
+
+    override fun getAllHistoryFlow(): Flow<List<ReviewHistoryEntity>> = 
+        sessionManager.currentUserId.flatMapLatest { userId ->
+            if (userId == null) flowOf(emptyList())
+            else reviewHistoryDao.getAllHistoryFlow(userId)
+        }
+
+    override fun getReviewCountSinceFlow(startTime: Long): Flow<Int> = 
+        sessionManager.currentUserId.flatMapLatest { userId ->
+            if (userId == null) flowOf(0)
+            else reviewHistoryDao.getReviewCountSinceFlow(userId, startTime)
+        }
+
+    override fun getUniqueWordsReviewedSinceFlow(startTime: Long): Flow<Int> = 
+        sessionManager.currentUserId.flatMapLatest { userId ->
+            if (userId == null) flowOf(0)
+            else reviewHistoryDao.getUniqueWordsReviewedSinceFlow(userId, startTime)
+        }
+
+    override fun getTotalReviewsFlow(): Flow<Int> = 
+        sessionManager.currentUserId.flatMapLatest { userId ->
+            if (userId == null) flowOf(0)
+            else reviewHistoryDao.getTotalReviewsFlow(userId)
+        }
+
+    override suspend fun getAllHistories(): List<ReviewHistoryEntity> {
+        val userId = sessionManager.currentUserId.first()
+        return if (userId == null) emptyList()
+        else reviewHistoryDao.getAllHistories(userId)
+    }
 }
