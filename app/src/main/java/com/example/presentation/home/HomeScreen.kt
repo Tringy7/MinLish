@@ -30,6 +30,7 @@ import coil.request.ImageRequest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.UserEntity
 import com.example.data.local.entity.VocabularySetEntity
+import com.example.data.local.entity.VocabularyWordEntity
 import com.example.presentation.VocabularyViewModel
 import com.example.presentation.DashboardStats
 import com.example.presentation.components.*
@@ -51,7 +52,13 @@ fun HomeScreen(
     val allDueWords by viewModel.allDueWords.collectAsStateWithLifecycle()
     val stats by viewModel.dashboardStats.collectAsStateWithLifecycle()
 
+    val quenWords by viewModel.quenWords.collectAsStateWithLifecycle()
+    val loMoWords by viewModel.loMoWords.collectAsStateWithLifecycle()
+    val nhoKipWords by viewModel.nhoKipWords.collectAsStateWithLifecycle()
+    val nhoNgayWords by viewModel.nhoNgayWords.collectAsStateWithLifecycle()
+
     var showAddSetDialog by remember { mutableStateOf(false) }
+    var selectedStatsCategory by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -82,7 +89,8 @@ fun HomeScreen(
                     user = user,
                     stats = stats,
                     onStudyDue = onStudyDue,
-                    onCreateSet = { showAddSetDialog = true }
+                    onCreateSet = { showAddSetDialog = true },
+                    onStatClick = { selectedStatsCategory = it }
                 )
             }
 
@@ -199,6 +207,22 @@ fun HomeScreen(
             }
         )
     }
+
+    selectedStatsCategory?.let { category ->
+        val wordsToShow = when (category) {
+            "QUÊN" -> quenWords
+            "LỜ MỜ" -> loMoWords
+            "NHỚ KỊP" -> nhoKipWords
+            "NHỚ NGAY" -> nhoNgayWords
+            else -> emptyList()
+        }
+        
+        WordListDialog(
+            title = "Từ vựng: $category",
+            words = wordsToShow,
+            onDismiss = { selectedStatsCategory = null }
+        )
+    }
 }
 
 @Composable
@@ -206,12 +230,13 @@ fun GreetingHeader(
     user: UserEntity?,
     stats: DashboardStats,
     onStudyDue: () -> Unit,
-    onCreateSet: () -> Unit
+    onCreateSet: () -> Unit,
+    onStatClick: (String) -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)
+            .padding(start = 20.dp, end = 20.dp, bottom = 12.dp)
     ) {
         // --- 1. Top profile bar ---
         Row(
@@ -223,7 +248,7 @@ fun GreetingHeader(
         ) {
             Column {
                 Text(
-                    text = "CHÀO BUỔI SÁNG",
+                    text = "CHÀO MỪNG TRỞ LẠI",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -384,10 +409,10 @@ fun GreetingHeader(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    StatBox(label = "QUÊN", value = "${stats.quenCount}", modifier = Modifier.weight(1f), isError = stats.quenCount > 0)
-                    StatBox(label = "LỜ MỜ", value = "${stats.loMoCount}", modifier = Modifier.weight(1f))
-                    StatBox(label = "NHỚ KỊP", value = "${stats.nhoKipCount}", modifier = Modifier.weight(1f))
-                    StatBox(label = "NHỚ NGAY", value = "${stats.nhoNgayCount}", modifier = Modifier.weight(1f))
+                    StatBox(label = "QUÊN", value = "${stats.quenCount}", modifier = Modifier.weight(1f), isError = stats.quenCount > 0, onClick = { onStatClick("QUÊN") })
+                    StatBox(label = "LỜ MỜ", value = "${stats.loMoCount}", modifier = Modifier.weight(1f), onClick = { onStatClick("LỜ MỜ") })
+                    StatBox(label = "NHỚ KỊP", value = "${stats.nhoKipCount}", modifier = Modifier.weight(1f), onClick = { onStatClick("NHỚ KỊP") })
+                    StatBox(label = "NHỚ NGAY", value = "${stats.nhoNgayCount}", modifier = Modifier.weight(1f), onClick = { onStatClick("NHỚ NGAY") })
                 }
             }
         }
@@ -395,10 +420,12 @@ fun GreetingHeader(
 }
 
 @Composable
-fun StatBox(label: String, value: String, modifier: Modifier = Modifier, isError: Boolean = false) {
+fun StatBox(label: String, value: String, modifier: Modifier = Modifier, isError: Boolean = false, onClick: () -> Unit = {}) {
     Box(
         modifier = modifier
-            .background(Color.White.copy(alpha = 0.6f), RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White.copy(alpha = 0.6f))
+            .clickable(onClick = onClick)
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -567,6 +594,54 @@ fun AddSetDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Hủy")
+            }
+        }
+    )
+}
+
+@Composable
+fun WordListDialog(
+    title: String,
+    words: List<VocabularyWordEntity>,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title, fontWeight = FontWeight.Bold) },
+        text = {
+            if (words.isEmpty()) {
+                Text("Không có từ nào trong mục này.")
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(words) { word ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(word.word, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                                Text(word.meaning, style = MaterialTheme.typography.bodyMedium)
+                                if (word.example.isNotBlank()) {
+                                    Text(
+                                        "Ex: ${word.example}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng")
             }
         }
     )

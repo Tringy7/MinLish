@@ -46,4 +46,9 @@ class ManageVocabularyWordUseCase(private val repository: VocabularyWordReposito
     }
 
     fun getFavoriteWordsFlow() = repository.getFavoriteWordsFlow()
+
+    fun getQuenWordsFlow() = repository.getQuenWordsFlow()
+    fun getLoMoWordsFlow() = repository.getLoMoWordsFlow()
+    fun getNhoKipWordsFlow() = repository.getNhoKipWordsFlow()
+    fun getNhoNgayWordsFlow() = repository.getNhoNgayWordsFlow()
 }

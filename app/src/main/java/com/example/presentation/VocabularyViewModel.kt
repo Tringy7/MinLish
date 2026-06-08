@@ -71,7 +71,12 @@ class VocabularyViewModel(
 
     val categories: StateFlow<List<String>> = getVocabularySetsUseCase("")
         .map { sets ->
-            listOf("Tất cả") + sets.map { it.category }.distinct().sorted()
+            val allTags = sets.flatMap { it.tags.split(",") }
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .sorted()
+            listOf("Tất cả") + allTags
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), listOf("Tất cả"))
 
@@ -83,7 +88,7 @@ class VocabularyViewModel(
     }.flatMapLatest { (query, category) ->
         getVocabularySetsUseCase(query).map { sets ->
             if (category == "Tất cả") sets
-            else sets.filter { it.category == category }
+            else sets.filter { it.tags.contains(category, ignoreCase = true) }
         }
     }.flowOn(Dispatchers.IO)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -125,6 +130,18 @@ class VocabularyViewModel(
     val dashboardStats: StateFlow<DashboardStats> = getDashboardStatsUseCase()
         .flowOn(Dispatchers.IO) 
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
+
+    val quenWords: StateFlow<List<VocabularyWordEntity>> = manageVocabularyWordUseCase.getQuenWordsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val loMoWords: StateFlow<List<VocabularyWordEntity>> = manageVocabularyWordUseCase.getLoMoWordsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val nhoKipWords: StateFlow<List<VocabularyWordEntity>> = manageVocabularyWordUseCase.getNhoKipWordsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val nhoNgayWords: StateFlow<List<VocabularyWordEntity>> = manageVocabularyWordUseCase.getNhoNgayWordsFlow()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun login(email: String, password: String) {
         viewModelScope.launch {
@@ -203,10 +220,11 @@ class VocabularyViewModel(
         name: String? = null,
         avatarUrl: String? = null,
         level: EnglishLevel? = null,
-        goal: String? = null
+        goal: String? = null,
+        dailyGoalWords: Int? = null
     ) {
         viewModelScope.launch {
-            updateProfileUseCase(name, avatarUrl, level, goal)
+            updateProfileUseCase(name, avatarUrl, level, goal, dailyGoalWords)
         }
     }
 

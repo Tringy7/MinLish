@@ -8,18 +8,23 @@ import com.example.domain.model.AuthProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_session")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_auth")
 
-class SessionManager(private val context: Context) {
+class AuthManager(private val context: Context) {
 
     companion object {
-        private val IS_LOGGED_IN = booleanPreferencesKey("is_logged_in")
+        private val ACCESS_TOKEN = stringPreferencesKey("access_token")
+        private val REFRESH_TOKEN = stringPreferencesKey("refresh_token")
         private val CURRENT_USER_ID = intPreferencesKey("current_user_id")
         private val CURRENT_PROVIDER = stringPreferencesKey("current_provider")
     }
 
+    val accessToken: Flow<String?> = context.dataStore.data.map { it[ACCESS_TOKEN] }
+    
+    val refreshToken: Flow<String?> = context.dataStore.data.map { it[REFRESH_TOKEN] }
+
     val isLoggedIn: Flow<Boolean> = context.dataStore.data.map { preferences ->
-        preferences[IS_LOGGED_IN] ?: false
+        !preferences[ACCESS_TOKEN].isNullOrBlank()
     }
 
     val currentUserId: Flow<Int?> = context.dataStore.data.map { preferences ->
@@ -32,15 +37,16 @@ class SessionManager(private val context: Context) {
         }
     }
 
-    suspend fun saveSession(userId: Int, provider: AuthProvider) {
+    suspend fun saveAuthData(userId: Int, provider: AuthProvider, accessToken: String, refreshToken: String = "") {
         context.dataStore.edit { preferences ->
-            preferences[IS_LOGGED_IN] = true
             preferences[CURRENT_USER_ID] = userId
             preferences[CURRENT_PROVIDER] = provider.name
+            preferences[ACCESS_TOKEN] = accessToken
+            preferences[REFRESH_TOKEN] = refreshToken
         }
     }
 
-    suspend fun clearSession() {
+    suspend fun clearAuthData() {
         context.dataStore.edit { it.clear() }
     }
 }

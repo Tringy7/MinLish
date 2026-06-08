@@ -46,8 +46,8 @@ fun FlashcardScreen(
     val wordsList by viewModel.wordsInCurrentSet.collectAsState()
 
     // Capture the cards once when the screen opens or when the wordsList first arrives
-    // This prevents the list from changing (shrinking) mid-session due to "dueOnly" logic
-    val studySessionCards = remember(wordsList.isNotEmpty()) {
+    // This prevents the list from changing (shrinking) mid-study due to "dueOnly" logic
+    val studyPackCards = remember(wordsList.isNotEmpty()) {
         val now = System.currentTimeMillis()
         if (dueOnly) {
             wordsList.filter { it.nextReviewTimestamp <= now }
@@ -57,7 +57,7 @@ fun FlashcardScreen(
     }
 
     var currentIndex by remember { mutableIntStateOf(0) }
-    var isSessionFinished by remember { mutableStateOf(false) }
+    var isStudyFinished by remember { mutableStateOf(false) }
     var reviewsLoggedCount by remember { mutableIntStateOf(0) }
 
     val context = LocalContext.current
@@ -88,16 +88,16 @@ fun FlashcardScreen(
                 .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            if (studySessionCards.isEmpty()) {
+            if (studyPackCards.isEmpty()) {
                 NoCardsScreen(onBack = onBack)
-            } else if (isSessionFinished || currentIndex >= studySessionCards.size) {
+            } else if (isStudyFinished || currentIndex >= studyPackCards.size) {
                 FinishedSummaryScreen(
                     totalLogged = reviewsLoggedCount,
                     onBack = onBack
                 )
             } else {
                 // Safe access with getOrNull to prevent IndexOutOfBoundsException
-                val currentWord = studySessionCards.getOrNull(currentIndex)
+                val currentWord = studyPackCards.getOrNull(currentIndex)
                 
                 if (currentWord != null) {
                     // Automatically read the English word when a new card loads
@@ -134,18 +134,18 @@ fun FlashcardScreen(
                                 }
 
                                 Text(
-                                    text = "Card ${currentIndex + 1} / ${studySessionCards.size}",
+                                    text = "Card ${currentIndex + 1} / ${studyPackCards.size}",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                     color = MaterialTheme.colorScheme.primary
                                 )
 
                                 IconButton(
                                     onClick = {
-                                        advanceSession(
-                                            size = studySessionCards.size,
+                                        advanceStudy(
+                                            size = studyPackCards.size,
                                             currentIndex = currentIndex,
                                             onIncrement = { currentIndex = it },
-                                            onFinish = { isSessionFinished = true }
+                                            onFinish = { isStudyFinished = true }
                                         )
                                     },
                                     modifier = Modifier.background(
@@ -160,7 +160,7 @@ fun FlashcardScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             LinearProgressIndicator(
-                                progress = { (currentIndex.toFloat() + 1).coerceAtMost(studySessionCards.size.toFloat()) / studySessionCards.size.toFloat() },
+                                progress = { (currentIndex.toFloat() + 1).coerceAtMost(studyPackCards.size.toFloat()) / studyPackCards.size.toFloat() },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(6.dp)
@@ -202,11 +202,11 @@ fun FlashcardScreen(
                                         // Marking as Learned = Rating 5 (Easy) in SM-2 logic
                                         viewModel.reviewWordResponse(currentWord, 5)
                                         reviewsLoggedCount++
-                                        advanceSession(
-                                            size = studySessionCards.size,
+                                        advanceStudy(
+                                            size = studyPackCards.size,
                                             currentIndex = currentIndex,
                                             onIncrement = { currentIndex = it },
-                                            onFinish = { isSessionFinished = true }
+                                            onFinish = { isStudyFinished = true }
                                         )
                                     },
                                     colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF2E7D32))
@@ -231,11 +231,11 @@ fun FlashcardScreen(
                                     onClick = {
                                         viewModel.reviewWordResponse(currentWord, 0)
                                         reviewsLoggedCount++
-                                        advanceSession(
-                                            size = studySessionCards.size,
+                                        advanceStudy(
+                                            size = studyPackCards.size,
                                             currentIndex = currentIndex,
                                             onIncrement = { currentIndex = it },
-                                            onFinish = { isSessionFinished = true }
+                                            onFinish = { isStudyFinished = true }
                                         )
                                     }
                                 )
@@ -250,11 +250,11 @@ fun FlashcardScreen(
                                     onClick = {
                                         viewModel.reviewWordResponse(currentWord, 3)
                                         reviewsLoggedCount++
-                                        advanceSession(
-                                            size = studySessionCards.size,
+                                        advanceStudy(
+                                            size = studyPackCards.size,
                                             currentIndex = currentIndex,
                                             onIncrement = { currentIndex = it },
-                                            onFinish = { isSessionFinished = true }
+                                            onFinish = { isStudyFinished = true }
                                         )
                                     }
                                 )
@@ -269,11 +269,11 @@ fun FlashcardScreen(
                                     onClick = {
                                         viewModel.reviewWordResponse(currentWord, 4)
                                         reviewsLoggedCount++
-                                        advanceSession(
-                                            size = studySessionCards.size,
+                                        advanceStudy(
+                                            size = studyPackCards.size,
                                             currentIndex = currentIndex,
                                             onIncrement = { currentIndex = it },
-                                            onFinish = { isSessionFinished = true }
+                                            onFinish = { isStudyFinished = true }
                                         )
                                     }
                                 )
@@ -288,11 +288,11 @@ fun FlashcardScreen(
                                     onClick = {
                                         viewModel.reviewWordResponse(currentWord, 5)
                                         reviewsLoggedCount++
-                                        advanceSession(
-                                            size = studySessionCards.size,
+                                        advanceStudy(
+                                            size = studyPackCards.size,
                                             currentIndex = currentIndex,
                                             onIncrement = { currentIndex = it },
-                                            onFinish = { isSessionFinished = true }
+                                            onFinish = { isStudyFinished = true }
                                         )
                                     }
                                 )
@@ -305,7 +305,7 @@ fun FlashcardScreen(
     }
 }
 
-private fun advanceSession(
+private fun advanceStudy(
     size: Int,
     currentIndex: Int,
     onIncrement: (Int) -> Unit,
@@ -614,7 +614,7 @@ fun FinishedSummaryScreen(
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .height(48.dp)
-                .testTag("session_back_to_lobby_btn"),
+                .testTag("study_back_to_lobby_btn"),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text("Trở về sảnh học chính", fontWeight = FontWeight.Bold)

@@ -41,7 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "minlish.db"
                 )
                 .fallbackToDestructiveMigration(true)
-                .fallbackToDestructiveMigrationOnDowngrade()
+                .fallbackToDestructiveMigrationOnDowngrade(true)
                 .setJournalMode(JournalMode.WRITE_AHEAD_LOGGING)
                 .build()
                 .also { INSTANCE = it }

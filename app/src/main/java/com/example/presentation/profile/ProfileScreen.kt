@@ -24,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,25 +59,41 @@ fun ProfileScreen(
     val studyGoals = listOf("IELTS", "TOEIC", "Giao tiếp", "Công việc", "Du học", "Khác")
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Hồ Sơ Cá Nhân", fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(
+                    top = innerPadding.calculateTopPadding(),
+                    bottom = innerPadding.calculateBottomPadding() + 24.dp,
+                    start = 20.dp,
+                    end = 20.dp
+                ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            Column(modifier = Modifier.padding(bottom = 8.dp)) {
+                Text(
+                    text = "CÀI ĐẶT CÁ NHÂN",
+                    style = MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Hồ sơ của bạn",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Black,
+                        fontSize = 26.sp,
+                        letterSpacing = (-0.5).sp
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
             // Avatar Card
             Box(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
@@ -155,6 +172,55 @@ fun ProfileScreen(
                 }
             }
 
+            // Daily Target Section
+            Text(text = "MỤC TIÊU HÀNG NGÀY", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+            MinLishCard(modifier = Modifier.fillMaxWidth()) {
+                var isEditingGoal by remember { mutableStateOf(false) }
+                var goalInput by remember { mutableStateOf("") }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Số từ mới cần ôn", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                    
+                    if (isEditingGoal) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            OutlinedTextField(
+                                value = goalInput,
+                                onValueChange = { if (it.all { char -> char.isDigit() }) goalInput = it },
+                                modifier = Modifier.width(80.dp),
+                                textStyle = MaterialTheme.typography.bodyMedium,
+                                singleLine = true,
+                                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
+                                )
+                            )
+                            IconButton(onClick = {
+                                val newGoal = goalInput.toIntOrNull() ?: 20
+                                viewModel.updateProfile(dailyGoalWords = newGoal)
+                                isEditingGoal = false
+                            }) {
+                                Icon(Icons.Default.Check, contentDescription = "Save", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    } else {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { 
+                            goalInput = (user?.dailyGoalWords ?: 20).toString()
+                            isEditingGoal = true 
+                        }) {
+                            Text(
+                                text = "${user?.dailyGoalWords ?: 20}",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                modifier = Modifier.padding(horizontal = 8.dp)
+                            )
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+
             // Notifications
             Text(text = "CÀI ĐẶT THÔNG BÁO", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
             MinLishCard(modifier = Modifier.fillMaxWidth()) {
@@ -183,7 +249,7 @@ fun ProfileScreen(
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = "Báo từ vựng đến hạn ôn", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
-                        Text(text = "Thông báo khi có từ đến hạn SM-2.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(text = "Thông báo khi có từ đến hạn.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     Switch(
                         checked = reviewAlarmEnabled,

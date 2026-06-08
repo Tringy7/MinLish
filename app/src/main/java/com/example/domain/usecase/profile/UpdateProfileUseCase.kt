@@ -8,7 +8,8 @@ class UpdateProfileUseCase(private val repository: UserRepository) {
         name: String? = null,
         avatarUrl: String? = null,
         englishLevel: EnglishLevel? = null,
-        learningGoal: String? = null
+        learningGoal: String? = null,
+        dailyGoalWords: Int? = null
     ) {
         val user = repository.getUser()
         user?.let {
@@ -16,7 +17,8 @@ class UpdateProfileUseCase(private val repository: UserRepository) {
                 name = name ?: it.name,
                 avatarUrl = avatarUrl ?: it.avatarUrl,
                 englishLevel = englishLevel ?: it.englishLevel,
-                learningGoal = learningGoal ?: it.learningGoal
+                learningGoal = learningGoal ?: it.learningGoal,
+                dailyGoalWords = dailyGoalWords ?: it.dailyGoalWords
             ))
         }
     }

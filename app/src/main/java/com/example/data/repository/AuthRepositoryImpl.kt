@@ -1,6 +1,6 @@
 package com.example.data.repository
 
-import com.example.data.local.SessionManager
+import com.example.data.local.AuthManager
 import com.example.data.local.dao.UserDao
 import com.example.data.local.entity.UserEntity
 import com.example.domain.model.AuthProvider
@@ -14,14 +14,14 @@ import kotlinx.coroutines.flow.flowOf
 
 class AuthRepositoryImpl(
     private val userDao: UserDao,
-    private val sessionManager: SessionManager
+    private val authManager: AuthManager
 ) : AuthRepository {
 
-    override fun observeIsLoggedIn(): Flow<Boolean> = sessionManager.isLoggedIn
+    override fun observeIsLoggedIn(): Flow<Boolean> = authManager.isLoggedIn
 
-    override fun observeCurrentUserId(): Flow<Int?> = sessionManager.currentUserId
+    override fun observeCurrentUserId(): Flow<Int?> = authManager.currentUserId
     
-    override fun observeCurrentProvider(): Flow<AuthProvider?> = sessionManager.currentProvider
+    override fun observeCurrentProvider(): Flow<AuthProvider?> = authManager.currentProvider
 
     override suspend fun login(email: String, password: String): Result<UserEntity> {
         return try {
@@ -36,7 +36,12 @@ class AuthRepositoryImpl(
             if (isValid) {
                 val updatedUser = user.copy(lastLoginAt = System.currentTimeMillis())
                 userDao.updateUser(updatedUser)
-                sessionManager.saveSession(updatedUser.id, AuthProvider.LOCAL)
+                
+                // Simulate JWT Generation
+                val dummyAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_payload"
+                val dummyRefreshToken = "dummy_refresh_token"
+                
+                authManager.saveAuthData(updatedUser.id, AuthProvider.LOCAL, dummyAccessToken, dummyRefreshToken)
                 Result.success(updatedUser)
             } else {
                 Result.failure(Exception("Mật khẩu không chính xác"))
@@ -72,7 +77,12 @@ class AuthRepositoryImpl(
             if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản"))
             
             val createdUser = newUser.copy(id = id.toInt())
-            sessionManager.saveSession(createdUser.id, AuthProvider.LOCAL)
+            
+            // Simulate JWT Generation
+            val dummyAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_payload"
+            val dummyRefreshToken = "dummy_refresh_token"
+            
+            authManager.saveAuthData(createdUser.id, AuthProvider.LOCAL, dummyAccessToken, dummyRefreshToken)
             Result.success(createdUser)
         } catch (e: Exception) {
             Result.failure(e)
@@ -95,7 +105,12 @@ class AuthRepositoryImpl(
                     name = displayName.ifBlank { existingUser.name }
                 )
                 userDao.updateUser(updatedUser)
-                sessionManager.saveSession(updatedUser.id, AuthProvider.GOOGLE)
+                
+                // Simulate JWT Generation
+                val dummyAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_payload"
+                val dummyRefreshToken = "dummy_refresh_token"
+                
+                authManager.saveAuthData(updatedUser.id, AuthProvider.GOOGLE, dummyAccessToken, dummyRefreshToken)
                 Result.success(updatedUser)
             } else {
                 // Create new Google user
@@ -112,7 +127,12 @@ class AuthRepositoryImpl(
                 if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản Google"))
                 
                 val createdUser = newUser.copy(id = id.toInt())
-                sessionManager.saveSession(createdUser.id, AuthProvider.GOOGLE)
+                
+                // Simulate JWT Generation
+                val dummyAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_payload"
+                val dummyRefreshToken = "dummy_refresh_token"
+                
+                authManager.saveAuthData(createdUser.id, AuthProvider.GOOGLE, dummyAccessToken, dummyRefreshToken)
                 Result.success(createdUser)
             }
         } catch (e: Exception) {
@@ -121,16 +141,16 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout() {
-        sessionManager.clearSession()
+        authManager.clearAuthData()
     }
 
     override suspend fun getCurrentUser(): UserEntity? {
-        val id = sessionManager.currentUserId.first()
+        val id = authManager.currentUserId.first()
         return if (id != null) userDao.getUserById(id) else null
     }
 
     override fun getCurrentUserFlow(): Flow<UserEntity?> {
-        return sessionManager.currentUserId.flatMapLatest { id ->
+        return authManager.currentUserId.flatMapLatest { id ->
             if (id != null) userDao.getUserFlow(id) else flowOf(null)
         }
     }

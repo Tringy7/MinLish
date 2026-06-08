@@ -39,7 +39,6 @@ class GetDashboardStatsUseCase(
             val user = args[0] as com.example.data.local.entity.UserEntity?
             val totalWords = args[1] as Int
             val learnedWords = args[2] as Int
-            val dueCount = args[3] as Int
             val masteredCount = args[4] as Int
             val learningCount = args[5] as Int
             val quenCount = args[6] as Int
@@ -48,13 +47,15 @@ class GetDashboardStatsUseCase(
             val nhoNgayCount = args[9] as Int
             val history = args[10] as List<ReviewHistoryEntity>
 
+            val dailyGoal = user?.dailyGoalWords ?: 20
+
             DashboardStats(
                 totalWordsCount = totalWords,
                 learnedWordsCount = learnedWords,
                 currentStreak = user?.streakCount ?: 0,
                 accuracy = calculateAccuracy(history),
-                retentionRate = calculateRetention(history),
-                dueTodayCount = dueCount,
+                retentionRate = calculateRetention(learnedWords, dailyGoal),
+                dueTodayCount = dailyGoal,
                 masteredWordsCount = masteredCount,
                 learningWordsCount = learningCount,
                 quenCount = quenCount,
@@ -82,16 +83,12 @@ class GetDashboardStatsUseCase(
     }
 
     private fun calculateRetention(
-        history: List<ReviewHistoryEntity>
+        learnedCount: Int,
+        dueCount: Int
     ): Int {
-
-        if (history.isEmpty()) return 100
-
-        val rememberedCount = history.count {
-            it.rating >= 2
-        }
-
-        return (rememberedCount * 100) / history.size
+        val total = learnedCount + dueCount
+        if (total == 0) return 100
+        return (learnedCount * 100) / total
     }
 
     private fun estimateLevel(

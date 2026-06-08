@@ -42,7 +42,7 @@ class MinLishApplication : Application() {
         val userRepo = ServiceLocator.provideUserRepository(this)
         val setRepo = ServiceLocator.provideVocabularySetRepository(this)
         val wordRepo = ServiceLocator.provideVocabularyWordRepository(this)
-        val sessionManager = ServiceLocator.getSessionManager(this)
+        val authManager = ServiceLocator.getAuthManager(this)
 
         if (userRepo.getUser() == null) {
             val user = UserEntity(
@@ -55,8 +55,8 @@ class MinLishApplication : Application() {
                 lastStudyDate = System.currentTimeMillis() - 24 * 60 * 60 * 1000L // Studied yesterday, streak active!
             )
             userRepo.saveUser(user)
-            // Initialize session for the default user
-            sessionManager.saveSession(user.id, AuthProvider.LOCAL)
+            // Initialize auth data for the default user
+            authManager.saveAuthData(user.id, AuthProvider.LOCAL, "dummy_token")
         }
 
         // Populate initial premium Vocab sets if table index 1 does not exist
