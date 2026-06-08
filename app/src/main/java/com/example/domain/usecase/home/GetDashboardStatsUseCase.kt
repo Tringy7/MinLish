@@ -39,6 +39,7 @@ class GetDashboardStatsUseCase(
             val user = args[0] as com.example.data.local.entity.UserEntity?
             val totalWords = args[1] as Int
             val learnedWords = args[2] as Int
+            val dueCount = args[3] as Int
             val masteredCount = args[4] as Int
             val learningCount = args[5] as Int
             val quenCount = args[6] as Int
@@ -55,7 +56,7 @@ class GetDashboardStatsUseCase(
                 currentStreak = user?.streakCount ?: 0,
                 accuracy = calculateAccuracy(history),
                 retentionRate = calculateRetention(learnedWords, dailyGoal),
-                dueTodayCount = dailyGoal,
+                dueTodayCount = dueCount,
                 masteredWordsCount = masteredCount,
                 learningWordsCount = learningCount,
                 quenCount = quenCount,

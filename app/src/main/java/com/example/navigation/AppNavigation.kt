@@ -115,8 +115,8 @@ fun AppNavigation(
                                 navController.navigate("vocab_detail/$setId")
                             },
                             onStudyDue = {
-                                viewModel.selectSet(1)
-                                navController.navigate("flashcard/1?dueOnly=true")
+                                viewModel.selectSet(-1)
+                                navController.navigate("flashcard/-1?dueOnly=true")
                             },
                             modifier = innerModifier
                         )

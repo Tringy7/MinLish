@@ -27,7 +27,7 @@ class AuthRepositoryImpl(
         return try {
             val normalizedEmail = email.trim().lowercase()
             val user = userDao.findByEmail(normalizedEmail) ?: return Result.failure(Exception("Tài khoản không tồn tại"))
-            
+
             if (user.provider != AuthProvider.LOCAL) {
                 return Result.failure(Exception("Tài khoản này được đăng nhập bằng Google"))
             }
@@ -75,13 +75,13 @@ class AuthRepositoryImpl(
             )
             val id = userDao.insertUser(newUser)
             if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản"))
-            
+
             val createdUser = newUser.copy(id = id.toInt())
-            
+
             // Simulate JWT Generation
             val dummyAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_payload"
             val dummyRefreshToken = "dummy_refresh_token"
-            
+
             authManager.saveAuthData(createdUser.id, AuthProvider.LOCAL, dummyAccessToken, dummyRefreshToken)
             Result.success(createdUser)
         } catch (e: Exception) {
@@ -93,7 +93,7 @@ class AuthRepositoryImpl(
         return try {
             val normalizedEmail = email.trim().lowercase()
             val existingUser = userDao.findByEmail(normalizedEmail)
-            
+
             if (existingUser != null) {
                 if (existingUser.provider != AuthProvider.GOOGLE) {
                     return Result.failure(Exception("Tài khoản này đã được đăng ký bằng mật khẩu. Vui lòng đăng nhập bằng Email."))
@@ -105,7 +105,7 @@ class AuthRepositoryImpl(
                     name = displayName.ifBlank { existingUser.name }
                 )
                 userDao.updateUser(updatedUser)
-                
+
                 // Simulate JWT Generation
                 val dummyAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_payload"
                 val dummyRefreshToken = "dummy_refresh_token"
@@ -125,9 +125,9 @@ class AuthRepositoryImpl(
                 )
                 val id = userDao.insertUser(newUser)
                 if (id <= 0) return Result.failure(Exception("Không thể tạo tài khoản Google"))
-                
+
                 val createdUser = newUser.copy(id = id.toInt())
-                
+
                 // Simulate JWT Generation
                 val dummyAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.dummy_payload"
                 val dummyRefreshToken = "dummy_refresh_token"

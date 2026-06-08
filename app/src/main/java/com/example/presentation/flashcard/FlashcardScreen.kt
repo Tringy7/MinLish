@@ -45,9 +45,13 @@ fun FlashcardScreen(
 ) {
     val wordsList by viewModel.wordsInCurrentSet.collectAsState()
 
+    LaunchedEffect(setId) {
+        viewModel.selectSet(setId)
+    }
+
     // Capture the cards once when the screen opens or when the wordsList first arrives
     // This prevents the list from changing (shrinking) mid-study due to "dueOnly" logic
-    val studyPackCards = remember(wordsList.isNotEmpty()) {
+    val studyPackCards = remember(wordsList) {
         val now = System.currentTimeMillis()
         if (dueOnly) {
             wordsList.filter { it.nextReviewTimestamp <= now }
